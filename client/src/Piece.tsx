@@ -56,7 +56,10 @@ function validateCardinalMove(currPos: coordinate, newPos: coordinate, boardStat
 export abstract class Piece {
   public type: number;
   public color: number;
+
   public enPassantable = 0;
+  public hasMoved = false;
+
   abstract validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]): any[];
 
   // Called after this piece moves
@@ -100,7 +103,7 @@ export class Pawn extends Piece {
         // Moving two squares valid only when on starting square
         return [(
           boardState[newPos[0]][newPos[1]].type === PieceType.NONE
-          && currPos[0] === (this.color === Colors.WHITE ? 6 : 1)
+          && !this.hasMoved
         ), {}]
       }
     } else if ([currPos[1]-1, currPos[1]+1].includes(newPos[1]) && currPos[0]+diff === newPos[0]) {
@@ -120,6 +123,10 @@ export class Pawn extends Piece {
     if (currPos[1] === newPos[1] && currPos[0]+(2*diff) === newPos[0]) {
       this.enPassantable = 2
     }
+
+    if (!this.hasMoved) {
+      this.hasMoved = true
+    }
   }
 
   turnTick() {
@@ -138,7 +145,11 @@ export class Bishop extends Piece {
     return [validateDiagMove(currPos, newPos, boardState), {}]
   }
 
-  postMove() {}
+  postMove() {
+    if (!this.hasMoved) {
+      this.hasMoved = true
+    }
+  }
 
   turnTick() {}
 }
@@ -174,7 +185,11 @@ export class Knight extends Piece {
     return [(targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, this.type)), {}]
   }
 
-  postMove() {}
+  postMove() {
+    if (!this.hasMoved) {
+      this.hasMoved = true
+    }
+  }
 
   turnTick() {}
 }
@@ -189,7 +204,11 @@ export class Rook extends Piece {
     return [validateCardinalMove(currPos, newPos, boardState), {}]
   }
 
-  postMove() {}
+  postMove() {
+    if (!this.hasMoved) {
+      this.hasMoved = true
+    }
+  }
 
   turnTick() {}
 }
@@ -226,7 +245,11 @@ export class King extends Piece {
     return [(targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, this.type)), {}]
   }
 
-  postMove() {}
+  postMove() {
+    if (!this.hasMoved) {
+      this.hasMoved = true
+    }
+  }
 
   turnTick() {}
 }
@@ -242,7 +265,11 @@ export class Queen extends Piece {
     return [(isDiag || isCardinal), {}];
   }
 
-  postMove() {}
+  postMove() {
+    if (!this.hasMoved) {
+      this.hasMoved = true
+    }
+  }
 
   turnTick() {}
 }
@@ -267,18 +294,23 @@ export function buildPiece(type: number) {
 export function copyPiece(piece: Piece) {
   // For now, this is pretty similar to buildPiece but will copy
   // properties specific to the piece (ie. counters)
+  let res
   if (piece.type === PieceType.WHITE_PAWN || piece.type === PieceType.BLACK_PAWN) {
-    return new Pawn(piece.type, piece.color)
+    res = new Pawn(piece.type, piece.color)
   } else if (piece.type === PieceType.WHITE_BISHOP || piece.type === PieceType.BLACK_BISHOP) {
-    return new Bishop(piece.type, piece.color)
+    res = new Bishop(piece.type, piece.color)
   } else if (piece.type === PieceType.WHITE_KNIGHT || piece.type === PieceType.BLACK_KNIGHT) {
-    return new Knight(piece.type, piece.color)
+    res = new Knight(piece.type, piece.color)
   } else if (piece.type === PieceType.WHITE_ROOK || piece.type === PieceType.BLACK_ROOK) {
-    return new Rook(piece.type, piece.color)
+    res = new Rook(piece.type, piece.color)
   } else if (piece.type === PieceType.WHITE_KING || piece.type === PieceType.BLACK_KING) {
-    return new King(piece.type, piece.color)
+    res = new King(piece.type, piece.color)
   } else if (piece.type === PieceType.WHITE_QUEEN || piece.type === PieceType.BLACK_QUEEN) {
-    return new Queen(piece.type, piece.color)
+    res = new Queen(piece.type, piece.color)
+  } else {
+    res = new None()
   }
-  return new None()
+  res.enPassantable = piece.enPassantable
+  res.hasMoved = piece.hasMoved
+  return res
 }
