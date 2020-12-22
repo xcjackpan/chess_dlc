@@ -1,28 +1,46 @@
 import React, { useState } from 'react';
 import "./Board.css";
+import { Colors, PieceType, getPieceAt, squaresEqual, coordinate } from "./Utils";
+import { buildPiece, copyPiece, Piece } from "./Piece";
 
-const OccupyState = {
-  NONE: 0,
-  WHITE_PAWN: 1,
-  WHITE_KNIGHT: 2,
-  WHITE_BISHOP: 3,
-  WHITE_ROOK: 4,
-  WHITE_QUEEN: 5,
-  WHITE_KING: 6,
-  BLACK_PAWN: -1,
-  BLACK_KNIGHT: -2,
-  BLACK_BISHOP: -3,
-  BLACK_ROOK: -4,
-  BLACK_QUEEN: -5,
-  BLACK_KING: -6,
+const emptyBoard = [
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0]
+]
+
+const testBoard = [
+  [-4,-2,-3,-5,-6,-3,-2,-4],
+  [-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [1,1,1,1,1,1,1,1],
+  [4,2,3,5,6,3,2,4]
+]
+
+function processBoard(board: number[][]) {
+  let res: Piece[][] = [[],[],[],[],[],[],[],[]]
+  board.forEach((row, y) => {
+    row.forEach((elem) => {
+      res[y].push(buildPiece(elem))
+    })
+  })
+  return res
 }
 
-function renderSquare(x: number, y: number, piece: number, selected: boolean, selectSquare: any) {
+function renderSquare(coord: coordinate, piece: number, selected: boolean, selectSquare: any) {
   return (
     <div
       className={`square${selected ? ` selected` : ``}`}
-      key={`${x}-${y}`}
-      onClick={()=>{selectSquare([x,y])}}
+      key={`${coord[0]}-${coord[1]}`}
+      onClick={()=>{selectSquare(coord)}}
     >
       {`${piece}`}
     </div>
@@ -30,47 +48,79 @@ function renderSquare(x: number, y: number, piece: number, selected: boolean, se
 }
 
 function Game() {
-  const [boardState, setBoardState] = useState(null);
+  let processed: Piece[][] = processBoard(testBoard)
+
+  const [boardState, setBoardState]: [Piece[][], any] = useState(processed);
   const [playerTurn, setTurn] = useState(false);
-  const [selectedSquare, setSelectedSquare] = useState([-1,-1])
+  const [selectedSquare, setSelectedSquare]: [coordinate, any] = useState([-1,-1])
 
-  function selectSquare(newSquare: number[]) {
-    // 1. Check if there is a currently selected square. If not, select newSquare and done.
-    // 2. If there is a currently selected square, check if there is a piece there. If not, select newSquare and done.
-    // 3. If there is a currently selected piece, check if the new selection is a valid move. If not, select newSquare and done.
-    // 4. This is a valid move. Make the move and done.
+  function makeMove(piece: coordinate, newSquare: coordinate, extraInfo?: any) {
+    // Move is guaranteed to be valid
+    // Build a copy of the board
+    let newBoard: Piece[][] = [[],[],[],[],[],[],[],[]]
+    boardState.forEach((row, y) => {
+      row.forEach((elem) => {
+        newBoard[y].push(copyPiece(elem))
+      })
+    })
 
-    if (newSquare[0] == selectedSquare[0] && newSquare[1] == selectedSquare[1]) {
-      setSelectedSquare([-1, -1])
-    } else {
-      setSelectedSquare(newSquare)
+    newBoard[newSquare[0]][newSquare[1]] = getPieceAt(piece, boardState)
+    newBoard[piece[0]][piece[1]] = buildPiece(0)
+
+    console.log(extraInfo)
+    if (extraInfo.hasOwnProperty("enpassant") && extraInfo["enpassant"]) {
+      const movedPiece = getPieceAt(newSquare, boardState)
+      const diff = movedPiece.type === PieceType.WHITE_PAWN ? 1 : -1
+      newBoard[newSquare[0]-diff][newSquare[1]] = buildPiece(0)
     }
+
+    newBoard[newSquare[0]][newSquare[1]].postMove(piece, newSquare, boardState)
+    newBoard.forEach((row, y) => {
+      row.forEach((elem, x) => {
+        elem.turnTick([x,y], newBoard)
+      })
+    })
+
+    setBoardState(newBoard)
   }
 
-  // Handle a null board
-  let board: number[][]
-  if (boardState == null) {
-    board = []
-    for (let x = 0; x < 8; x++) {
-      board.push([])
-      for (let y = 0; y < 8; y++) {
-        board[x].push(OccupyState.NONE)
-      }
+  function selectSquare(newSquare: coordinate) {
+    // 1. Check if there is a currently selected square. If not, select newSquare and done.
+    if (squaresEqual(newSquare, selectedSquare)) {
+      setSelectedSquare([-1, -1])
+      return
+    } else if (squaresEqual(selectedSquare, [-1, -1])) {
+      setSelectedSquare(newSquare)
+      return
     }
-  } else {
-    board = boardState!
+
+    // 2. If there is a currently selected square, check if there is a piece there. If not, select newSquare and done.
+    const pieceOnSquare: Piece = boardState[selectedSquare[0]][selectedSquare[1]]
+    if (pieceOnSquare.type === PieceType.NONE) {
+      setSelectedSquare(newSquare)
+      return
+    }
+
+    const [isValid, extraInfo] = pieceOnSquare.validateMove(selectedSquare, newSquare, boardState)
+    // 3. There is a currently selected piece, check if the new selection is a valid move. If not, select newSquare and done.
+    if (isValid) {
+      // 4. Move the piece
+      makeMove(selectedSquare, newSquare, extraInfo)
+      setSelectedSquare([-1, -1])
+    } else {
+      setSelectedSquare(newSquare, extraInfo)
+    }
   }
 
   return (
     <div className="board">
-      {board.map(
+      {boardState.map(
         (row, x) => (
           <div className="row" key={x}>
             {row.map((occupant, y) => renderSquare(
-              x,
-              y,
-              occupant,
-              (selectedSquare[0] === x && selectedSquare[1] === y),
+              [x,y],
+              occupant.type,
+              squaresEqual(selectedSquare, [x,y]),
               selectSquare,
             ))}
           </div>
