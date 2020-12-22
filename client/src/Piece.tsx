@@ -1,5 +1,58 @@
 import { Colors, PieceType, squaresEqual, oppositeSign, getPieceAt, coordinate } from "./Utils";
 
+function validateDiagMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
+  let xDiff = newPos[0] - currPos[0]
+  let yDiff = newPos[1] - currPos[1]
+
+  let onDiag = (Math.abs(xDiff) === Math.abs(yDiff))
+  if (!onDiag || (xDiff === 0 || yDiff === 0)) {
+    return [false, {}]
+  }
+
+  let xInc = xDiff > 0 ? 1 : -1
+  let yInc = yDiff > 0 ? 1 : -1
+  for (let i = 1; i < Math.abs(xDiff); i++) {
+    let candidate = getPieceAt([currPos[0]+(i*xInc), currPos[1]+(i*yInc)], boardState)
+    if (candidate.type !== PieceType.NONE) {
+      return [false, {}]
+    }
+  }
+
+  let currPiece = getPieceAt(currPos, boardState)
+  let targetPiece = getPieceAt(newPos, boardState)
+  return [(targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, currPiece.type)), {}]
+}
+
+function validateCardinalMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
+  let xDiff = newPos[0] - currPos[0]
+  let yDiff = newPos[1] - currPos[1]
+
+  let onCardinal = (xDiff === 0 && yDiff !== 0) || (xDiff !== 0 && yDiff === 0)
+  if (!onCardinal) {
+    return [false, {}]
+  }
+
+  let xInc = 0
+  let yInc = 0
+
+  if (xDiff === 0) {
+    yInc = yDiff > 0 ? 1 : -1
+  } else {
+    xInc = xDiff > 0 ? 1 : -1
+  }
+
+  for (let i = 1; i < Math.abs(xDiff); i++) {
+    let candidate = getPieceAt([currPos[0]+(i*xInc), currPos[1]+(i*yInc)], boardState)
+    if (candidate.type !== PieceType.NONE) {
+      return [false, {}]
+    }
+  }
+
+  let currPiece = getPieceAt(currPos, boardState)
+  let targetPiece = getPieceAt(newPos, boardState)
+  return [(targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, currPiece.type)), {}]
+}
+
 export abstract class Piece {
   public type: number;
   public color: number;
@@ -82,7 +135,7 @@ export class Bishop extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
-    return [false, {}];
+    return [validateDiagMove(currPos, newPos, boardState), {}]
   }
 
   postMove() {}
@@ -96,7 +149,29 @@ export class Knight extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
-    return [false, {}];
+    let validKnightMoves: coordinate[] = [
+      [currPos[0]-1, currPos[1]-2],
+      [currPos[0]+1, currPos[1]-2],
+      [currPos[0]-1, currPos[1]+2],
+      [currPos[0]+1, currPos[1]+2],
+      [currPos[0]-2, currPos[1]-1],
+      [currPos[0]+2, currPos[1]-1],
+      [currPos[0]-2, currPos[1]+1],
+      [currPos[0]+2, currPos[1]+1],
+    ]
+    let validKnightMove = false
+    validKnightMoves.forEach((elem) => {
+      if (squaresEqual(elem, newPos)) {
+        validKnightMove = true
+      }
+    })
+
+    if (!validKnightMove) {
+      return [false, {}]
+    }
+
+    let targetPiece = getPieceAt(newPos, boardState)
+    return [(targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, this.type)), {}]
   }
 
   postMove() {}
@@ -110,7 +185,8 @@ export class Rook extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
-    return [false, {}];
+    // TODO: Castling
+    return [validateCardinalMove(currPos, newPos, boardState), {}]
   }
 
   postMove() {}
@@ -124,7 +200,30 @@ export class King extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
-    return [false, {}];
+    // TODO: Castling! And check
+    let validKingMoves: coordinate[] = [
+      [currPos[0]-1, currPos[1]-1],
+      [currPos[0]+1, currPos[1]-1],
+      [currPos[0]-1, currPos[1]+1],
+      [currPos[0]+1, currPos[1]+1],
+      [currPos[0], currPos[1]-1],
+      [currPos[0]+1, currPos[1]],
+      [currPos[0]-1, currPos[1]],
+      [currPos[0], currPos[1]+1],
+    ]
+    let validKingMove = false
+    validKingMoves.forEach((elem) => {
+      if (squaresEqual(elem, newPos)) {
+        validKingMove = true
+      }
+    })
+
+    if (!validKingMove) {
+      return [false, {}]
+    }
+
+    let targetPiece = getPieceAt(newPos, boardState)
+    return [(targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, this.type)), {}]
   }
 
   postMove() {}
@@ -138,7 +237,9 @@ export class Queen extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
-    return [false, {}];
+    const isDiag = validateDiagMove(currPos, newPos, boardState)
+    const isCardinal = validateCardinalMove(currPos, newPos, boardState)
+    return [(isDiag || isCardinal), {}];
   }
 
   postMove() {}
