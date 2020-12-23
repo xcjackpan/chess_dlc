@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from "axios";
 import Game from './Game';
 import { PlayerType, gameinfo } from "./Utils";
 
@@ -11,6 +12,12 @@ function App() {
 
   function startGame(player: number) {
 
+  }
+
+  function makeRequest() {
+    axios.get("http://localhost:8080/create").then(res => {
+      console.log(res)
+    });
   }
 
   if (isLoading) {
@@ -30,6 +37,7 @@ function App() {
       <div className="main">
         <div onClick={() => {setInGame({inGame: true, currPlayer: PlayerType.WHITE})}}>Start game as white</div>
         <div onClick={() => {setInGame({inGame: true, currPlayer: PlayerType.BLACK})}}>Start game as black</div>
+        <div onClick={() => {makeRequest()}}>Make request</div>
       </div>
     );
   }
