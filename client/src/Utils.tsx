@@ -16,11 +16,6 @@ export const PieceType = {
   BLACK_KING: -6,
 }
 
-export const Colors = {
-  WHITE: 0,
-  BLACK: 1,
-}
-
 export function squaresEqual(a: coordinate, b: coordinate) {
   return a[0] === b[0] && a[1] === b[1]
 }

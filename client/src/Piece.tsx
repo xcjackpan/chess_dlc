@@ -1,4 +1,4 @@
-import { Colors, PieceType, squaresEqual, oppositeSign, getPieceAt, coordinate } from "./Utils";
+import { PieceType, squaresEqual, oppositeSign, getPieceAt, coordinate } from "./Utils";
 
 function validateDiagMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]): boolean {
   let xDiff = newPos[0] - currPos[0]
@@ -51,6 +51,29 @@ function validateCardinalMove(currPos: coordinate, newPos: coordinate, boardStat
   let currPiece = getPieceAt(currPos, boardState)
   let targetPiece = getPieceAt(newPos, boardState)
   return (targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, currPiece.type))
+}
+
+function validateCastle(kingPos: coordinate, rookPos: coordinate, boardState: Piece[][]): boolean {
+  const king = getPieceAt(kingPos, boardState)
+  const rook = getPieceAt(rookPos, boardState)
+
+  if (king.hasMoved || rook.hasMoved || kingPos[0] !== rookPos[0]) {
+    return false
+  }
+
+  const yDiff = rookPos[1] - kingPos[1]
+  console.log(yDiff)
+  const yInc = yDiff > 0 ? 1 : -1
+  for (let i = 1; i < Math.abs(yDiff); i++) {
+    let candidate = getPieceAt([kingPos[0], kingPos[1]+(i*yInc)], boardState)
+    console.log([kingPos[0], kingPos[1]+(i*yInc)])
+    // TODO: Validate King is not passing through check for the first two squares
+    if (candidate.type !== PieceType.NONE) {
+      return false
+    }
+  }
+
+  return true
 }
 
 export abstract class Piece {
@@ -235,12 +258,19 @@ export class King extends Piece {
       }
     })
 
-    if (!validKingMove) {
-      return [false, {}]
-    }
-
     let targetPiece = getPieceAt(newPos, boardState)
-    return [(targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, this.type)), {}]
+    if (!validKingMove) {
+      // Check castling
+      const isTargetFriendlyRook = (
+        !oppositeSign(this.type, targetPiece.type) && (targetPiece.type === PieceType.WHITE_ROOK || targetPiece.type === PieceType.BLACK_ROOK)
+      )
+      if (isTargetFriendlyRook) {
+        return [(validateCastle(currPos, newPos, boardState)), {"castle": true, "kingPos": currPos, "rookPos": newPos}]
+      }
+      return [false, {}]
+    } else {
+      return [(targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, this.type)), {}]
+    }
   }
 
   postMove() {

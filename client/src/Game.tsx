@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import "./Board.css";
-import { Colors, PieceType, getPieceAt, squaresEqual, coordinate } from "./Utils";
+import { PieceType, getPieceAt, squaresEqual, coordinate } from "./Utils";
 import { buildPiece, copyPiece, Piece } from "./Piece";
 
 const emptyBoard = [
@@ -64,14 +64,29 @@ function Game() {
       })
     })
 
-    newBoard[newSquare[0]][newSquare[1]] = getPieceAt(piece, boardState)
-    newBoard[piece[0]][piece[1]] = buildPiece(0)
+    if (extraInfo.hasOwnProperty("castle") && extraInfo["castle"]) {
+      const rookPos = extraInfo["rookPos"]
+      const kingPos = extraInfo["kingPos"]
 
-    console.log(extraInfo)
-    if (extraInfo.hasOwnProperty("enpassant") && extraInfo["enpassant"]) {
+      // King moves two squares in direction of rook
+      const yDiff = rookPos[1] - kingPos[1]
+      const yInc = yDiff > 0 ? 1 : -1
+
+      newBoard[kingPos[0]][kingPos[1]+(2*yInc)] = getPieceAt(kingPos, boardState)
+      newBoard[kingPos[0]][kingPos[1]+(2*yInc)-(yInc)] = getPieceAt(rookPos, boardState)
+      newBoard[kingPos[0]][kingPos[1]] = buildPiece(0)
+      newBoard[rookPos[0]][rookPos[1]] = buildPiece(0)
+
+    } else if (extraInfo.hasOwnProperty("enpassant") && extraInfo["enpassant"]) {
+      newBoard[newSquare[0]][newSquare[1]] = getPieceAt(piece, boardState)
+      newBoard[piece[0]][piece[1]] = buildPiece(0)
+    
       const movedPiece = getPieceAt(newSquare, boardState)
       const diff = movedPiece.type === PieceType.WHITE_PAWN ? 1 : -1
       newBoard[newSquare[0]-diff][newSquare[1]] = buildPiece(0)
+    } else {
+      newBoard[newSquare[0]][newSquare[1]] = getPieceAt(piece, boardState)
+      newBoard[piece[0]][piece[1]] = buildPiece(0)
     }
 
     newBoard[newSquare[0]][newSquare[1]].postMove(piece, newSquare, boardState)
