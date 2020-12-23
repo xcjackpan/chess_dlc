@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
 import Game from './Game';
+import { PlayerType, gameinfo } from "./Utils";
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
-  const [inGame, setInGame] = useState(true);
+  const [gameInfo, setInGame]: [gameinfo, any] = useState({
+    inGame: false,
+    currPlayer: 0,
+  });
+
+  function startGame(player: number) {
+
+  }
 
   if (isLoading) {
     return (
@@ -11,16 +19,17 @@ function App() {
         <div>Loading</div>
       </div>
     );
-  } else if (inGame) {
+  } else if (gameInfo.inGame) {
     return (
       <div className="main">
-        <Game/>
+        <Game currPlayer={gameInfo.currPlayer} initTurn={PlayerType.WHITE}/>
       </div>
     );
-  } else if (!inGame) {
+  } else if (!gameInfo.inGame) {
     return (
       <div className="main">
-        <div>In lobby</div>
+        <div onClick={() => {setInGame({inGame: true, currPlayer: PlayerType.WHITE})}}>Start game as white</div>
+        <div onClick={() => {setInGame({inGame: true, currPlayer: PlayerType.BLACK})}}>Start game as black</div>
       </div>
     );
   }

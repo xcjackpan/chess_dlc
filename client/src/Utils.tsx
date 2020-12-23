@@ -1,5 +1,21 @@
 export type coordinate = [number, number]
 
+export type gameinfo = {
+  inGame: boolean,
+  currPlayer: number,
+}
+
+export type gameprops = {
+  currPlayer: number,
+  initTurn: number,
+}
+
+export const PlayerType = {
+  SPECTATOR: 0,
+  WHITE: 1,
+  BLACK: -1,
+}
+
 export const PieceType = {
   NONE: 0,
   WHITE_PAWN: 1,

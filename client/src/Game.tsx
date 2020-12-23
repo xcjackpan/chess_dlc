@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import "./Board.css";
-import { PieceType, getPieceAt, squaresEqual, coordinate } from "./Utils";
+import { PieceType, getPieceAt, oppositeSign, squaresEqual, coordinate, gameprops } from "./Utils";
 import { buildPiece, copyPiece, Piece } from "./Piece";
 
 const emptyBoard = [
@@ -47,12 +47,13 @@ function renderSquare(coord: coordinate, piece: number, selected: boolean, selec
   )
 }
 
-function Game() {
+function Game(props: gameprops) {
+  let { currPlayer, initTurn } = props
   let processed: Piece[][] = processBoard(testBoard)
 
   const [boardState, setBoardState]: [Piece[][], any] = useState(processed);
-  const [playerTurn, setTurn] = useState(false);
   const [selectedSquare, setSelectedSquare]: [coordinate, any] = useState([-1,-1])
+  const [currTurn, setTurn] = useState(initTurn);
 
   function makeMove(piece: coordinate, newSquare: coordinate, extraInfo?: any) {
     // Move is guaranteed to be valid
@@ -116,15 +117,19 @@ function Game() {
       return
     }
 
-    const [isValid, extraInfo] = pieceOnSquare.validateMove(selectedSquare, newSquare, boardState)
-    // 3. There is a currently selected piece, check if the new selection is a valid move. If not, select newSquare and done.
-    if (isValid) {
-      // 4. Move the piece
-      makeMove(selectedSquare, newSquare, extraInfo)
-      setSelectedSquare([-1, -1])
-    } else {
-      setSelectedSquare(newSquare, extraInfo)
+    const isCurrentTurn = (currTurn === currPlayer)
+    if (isCurrentTurn && !oppositeSign(pieceOnSquare.type, currPlayer)) {
+      // 3. There is a currently selected piece, check if the new selection is a valid move. If not, select newSquare and done.
+      const [isValid, extraInfo] = pieceOnSquare.validateMove(selectedSquare, newSquare, boardState)
+      if (isValid) {
+        // 4. Move the piece
+        makeMove(selectedSquare, newSquare, extraInfo)
+        setSelectedSquare([-1, -1])
+        setTurn(currTurn*-1)
+      }
     }
+
+    setSelectedSquare(newSquare)
   }
 
   return (
