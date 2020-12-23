@@ -221,8 +221,20 @@ export class Rook extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
-    // TODO: Castling
-    return [validateCardinalMove(currPos, newPos, boardState), {}]
+    const isValidCardinalMove = validateCardinalMove(currPos, newPos, boardState)
+    if (!isValidCardinalMove) {
+      // Check castling
+      let targetPiece = getPieceAt(newPos, boardState)
+      const isTargetFriendlyKing = (
+        !oppositeSign(this.type, targetPiece.type) && (targetPiece.type === PieceType.WHITE_KING || targetPiece.type === PieceType.BLACK_KING)
+      )
+      if (isTargetFriendlyKing) {
+        return [(validateCastle(newPos, currPos, boardState)), {"castle": true, "kingPos": newPos, "rookPos": currPos}]
+      }
+      return [false, {}]
+    } else {
+      return [true, {}]
+    }
   }
 
   postMove() {
