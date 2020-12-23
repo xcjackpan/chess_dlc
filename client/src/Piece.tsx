@@ -1,12 +1,12 @@
 import { Colors, PieceType, squaresEqual, oppositeSign, getPieceAt, coordinate } from "./Utils";
 
-function validateDiagMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
+function validateDiagMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]): boolean {
   let xDiff = newPos[0] - currPos[0]
   let yDiff = newPos[1] - currPos[1]
 
   let onDiag = (Math.abs(xDiff) === Math.abs(yDiff))
   if (!onDiag || (xDiff === 0 || yDiff === 0)) {
-    return [false, {}]
+    return false
   }
 
   let xInc = xDiff > 0 ? 1 : -1
@@ -14,22 +14,22 @@ function validateDiagMove(currPos: coordinate, newPos: coordinate, boardState: P
   for (let i = 1; i < Math.abs(xDiff); i++) {
     let candidate = getPieceAt([currPos[0]+(i*xInc), currPos[1]+(i*yInc)], boardState)
     if (candidate.type !== PieceType.NONE) {
-      return [false, {}]
+      return false
     }
   }
 
   let currPiece = getPieceAt(currPos, boardState)
   let targetPiece = getPieceAt(newPos, boardState)
-  return [(targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, currPiece.type)), {}]
+  return (targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, currPiece.type))
 }
 
-function validateCardinalMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
+function validateCardinalMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]): boolean {
   let xDiff = newPos[0] - currPos[0]
   let yDiff = newPos[1] - currPos[1]
 
   let onCardinal = (xDiff === 0 && yDiff !== 0) || (xDiff !== 0 && yDiff === 0)
   if (!onCardinal) {
-    return [false, {}]
+    return false
   }
 
   let xInc = 0
@@ -44,18 +44,17 @@ function validateCardinalMove(currPos: coordinate, newPos: coordinate, boardStat
   for (let i = 1; i < Math.abs(xDiff); i++) {
     let candidate = getPieceAt([currPos[0]+(i*xInc), currPos[1]+(i*yInc)], boardState)
     if (candidate.type !== PieceType.NONE) {
-      return [false, {}]
+      return false
     }
   }
 
   let currPiece = getPieceAt(currPos, boardState)
   let targetPiece = getPieceAt(newPos, boardState)
-  return [(targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, currPiece.type)), {}]
+  return (targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, currPiece.type))
 }
 
 export abstract class Piece {
   public type: number;
-  public color: number;
 
   public enPassantable = 0;
   public hasMoved = false;
@@ -68,15 +67,14 @@ export abstract class Piece {
   // Called after a turn ticks
   abstract turnTick(currPos: coordinate, boardState: Piece[][]): any;
 
-  constructor(type: number, color: number) {
+  constructor(type: number) {
     this.type = type
-    this.color = color
   }
 }
 
 export class None extends Piece {
   constructor() {
-    super(0, -1)
+    super(0)
   }
 
   validateMove() {
@@ -89,12 +87,12 @@ export class None extends Piece {
 }
 
 export class Pawn extends Piece {
-  constructor(type: number, color: number) {
-    super(type, color)
+  constructor(type: number) {
+    super(type)
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
-    let diff: number = this.color === Colors.WHITE ? -1 : 1
+    let diff: number = this.type > 0 ? -1 : 1
     if (currPos[1] === newPos[1]) {
       if (currPos[0]+(diff) === newPos[0]) {
         // Moving one square forward valid only when square empty
@@ -119,7 +117,7 @@ export class Pawn extends Piece {
 
   postMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
     // TODO: Handle promotion
-    let diff: number = this.color === Colors.WHITE ? -1 : 1
+    let diff: number = this.type > 0 ? -1 : 1
     if (currPos[1] === newPos[1] && currPos[0]+(2*diff) === newPos[0]) {
       this.enPassantable = 2
     }
@@ -137,8 +135,8 @@ export class Pawn extends Piece {
 }
 
 export class Bishop extends Piece {
-  constructor(type: number, color: number) {
-    super(type, color)
+  constructor(type: number) {
+    super(type)
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
@@ -155,8 +153,8 @@ export class Bishop extends Piece {
 }
 
 export class Knight extends Piece {
-  constructor(type: number, color: number) {
-    super(type, color)
+  constructor(type: number) {
+    super(type)
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
@@ -195,8 +193,8 @@ export class Knight extends Piece {
 }
 
 export class Rook extends Piece {
-  constructor(type: number, color: number) {
-    super(type, color)
+  constructor(type: number) {
+    super(type)
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
@@ -214,8 +212,8 @@ export class Rook extends Piece {
 }
 
 export class King extends Piece {
-  constructor(type: number, color: number) {
-    super(type, color)
+  constructor(type: number) {
+    super(type)
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
@@ -255,8 +253,8 @@ export class King extends Piece {
 }
 
 export class Queen extends Piece {
-  constructor(type: number, color: number) {
-    super(type, color)
+  constructor(type: number) {
+    super(type)
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
@@ -276,17 +274,17 @@ export class Queen extends Piece {
 
 export function buildPiece(type: number) {
   if (type === PieceType.WHITE_PAWN || type === PieceType.BLACK_PAWN) {
-    return new Pawn(type, type < 0 ? 1 : 0)
+    return new Pawn(type)
   } else if (type === PieceType.WHITE_BISHOP || type === PieceType.BLACK_BISHOP) {
-    return new Bishop(type, type < 0 ? 1 : 0)
+    return new Bishop(type)
   } else if (type === PieceType.WHITE_KNIGHT || type === PieceType.BLACK_KNIGHT) {
-    return new Knight(type, type < 0 ? 1 : 0)
+    return new Knight(type)
   } else if (type === PieceType.WHITE_ROOK || type === PieceType.BLACK_ROOK) {
-    return new Rook(type, type < 0 ? 1 : 0)
+    return new Rook(type)
   } else if (type === PieceType.WHITE_KING || type === PieceType.BLACK_KING) {
-    return new King(type, type < 0 ? 1 : 0)
+    return new King(type)
   } else if (type === PieceType.WHITE_QUEEN || type === PieceType.BLACK_QUEEN) {
-    return new Queen(type, type < 0 ? 1 : 0)
+    return new Queen(type)
   }
   return new None()
 }
@@ -296,17 +294,17 @@ export function copyPiece(piece: Piece) {
   // properties specific to the piece (ie. counters)
   let res
   if (piece.type === PieceType.WHITE_PAWN || piece.type === PieceType.BLACK_PAWN) {
-    res = new Pawn(piece.type, piece.color)
+    res = new Pawn(piece.type)
   } else if (piece.type === PieceType.WHITE_BISHOP || piece.type === PieceType.BLACK_BISHOP) {
-    res = new Bishop(piece.type, piece.color)
+    res = new Bishop(piece.type)
   } else if (piece.type === PieceType.WHITE_KNIGHT || piece.type === PieceType.BLACK_KNIGHT) {
-    res = new Knight(piece.type, piece.color)
+    res = new Knight(piece.type)
   } else if (piece.type === PieceType.WHITE_ROOK || piece.type === PieceType.BLACK_ROOK) {
-    res = new Rook(piece.type, piece.color)
+    res = new Rook(piece.type)
   } else if (piece.type === PieceType.WHITE_KING || piece.type === PieceType.BLACK_KING) {
-    res = new King(piece.type, piece.color)
+    res = new King(piece.type)
   } else if (piece.type === PieceType.WHITE_QUEEN || piece.type === PieceType.BLACK_QUEEN) {
-    res = new Queen(piece.type, piece.color)
+    res = new Queen(piece.type)
   } else {
     res = new None()
   }
