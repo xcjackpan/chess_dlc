@@ -11,7 +11,7 @@ function App() {
   });
 
   function startGame(player: number) {
-
+    setInGame({inGame: true, currPlayer: player})
   }
 
   function makeRequest() {
@@ -35,8 +35,8 @@ function App() {
   } else if (!gameInfo.inGame) {
     return (
       <div className="main">
-        <div onClick={() => {setInGame({inGame: true, currPlayer: PlayerType.WHITE})}}>Start game as white</div>
-        <div onClick={() => {setInGame({inGame: true, currPlayer: PlayerType.BLACK})}}>Start game as black</div>
+        <div onClick={() => {startGame(PlayerType.WHITE)}}>Start game as white</div>
+        <div onClick={() => {startGame(PlayerType.BLACK)}}>Start game as black</div>
         <div onClick={() => {makeRequest()}}>Make request</div>
       </div>
     );
