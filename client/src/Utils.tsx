@@ -1,13 +1,14 @@
 export type coordinate = [number, number]
 
-export type gameinfo = {
-  currPlayer: number,
-  gameId: string,
-}
-
 export type gameprops = {
   currPlayer: number,
   initTurn: number,
+}
+
+export const GameState = {
+  PLAYER_SELECT: 0,
+  DRAFT: 1,
+  BOARD: 2,
 }
 
 export const PlayerType = {

@@ -3,18 +3,18 @@ import React, { useState } from "react";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 import Game from "./Game";
 import Lobby from "./Lobby";
-import { PlayerType, gameinfo } from "./Utils";
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
-  const [gameInfo, setInGame]: [gameinfo, any] = useState({
-    currPlayer: 0, // This is the default player on-refresh
-    gameId: '123456',
-  });
 
-  function makeRequest() {
-    axios.get("http://localhost:8080/create").then(res => {
+  function createGame(history: any) {
+    // 1. Create the record of the game in the backend
+    axios.post("http://localhost:8080/create").then(res => {
+      const gameInfo = res.data
       console.log(res)
+
+      // 2. Redirect you to the game
+      history.push(`/game/${gameInfo.gameId}`)
     });
   }
 
@@ -32,10 +32,7 @@ function App() {
             path="/game/:gameId"
             render={() => (
               <div className="main">
-                <Game
-                  currPlayer={gameInfo.currPlayer}
-                  initTurn={PlayerType.WHITE}
-                />
+                <Game />
               </div>
             )}
           />
@@ -43,8 +40,7 @@ function App() {
             render={() => (
               <div>
                 <Lobby
-                  startGame={setInGame}
-                  makeRequest={makeRequest}
+                  createGame={createGame}
                 />
               </div>
             )}
