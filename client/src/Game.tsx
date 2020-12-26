@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import "./Board.css";
 import { PieceType, getPieceAt, oppositeSign, squaresEqual, coordinate, gameprops } from "./Utils";
 import { buildPiece, copyPiece, Piece } from "./Piece";

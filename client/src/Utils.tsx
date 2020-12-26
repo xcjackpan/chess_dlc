@@ -1,8 +1,8 @@
 export type coordinate = [number, number]
 
 export type gameinfo = {
-  inGame: boolean,
   currPlayer: number,
+  gameId: string,
 }
 
 export type gameprops = {

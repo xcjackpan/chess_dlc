@@ -1,18 +1,16 @@
-import React, { useState } from 'react';
 import axios from "axios";
-import Game from './Game';
+import React, { useState } from "react";
+import { BrowserRouter, Route, Switch } from "react-router-dom";
+import Game from "./Game";
+import Lobby from "./Lobby";
 import { PlayerType, gameinfo } from "./Utils";
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [gameInfo, setInGame]: [gameinfo, any] = useState({
-    inGame: false,
-    currPlayer: 0,
+    currPlayer: 0, // This is the default player on-refresh
+    gameId: '123456',
   });
-
-  function startGame(player: number) {
-    setInGame({inGame: true, currPlayer: player})
-  }
 
   function makeRequest() {
     axios.get("http://localhost:8080/create").then(res => {
@@ -26,20 +24,34 @@ function App() {
         <div>Loading</div>
       </div>
     );
-  } else if (gameInfo.inGame) {
+  } else {
     return (
-      <div className="main">
-        <Game currPlayer={gameInfo.currPlayer} initTurn={PlayerType.WHITE}/>
-      </div>
-    );
-  } else if (!gameInfo.inGame) {
-    return (
-      <div className="main">
-        <div onClick={() => {startGame(PlayerType.WHITE)}}>Start game as white</div>
-        <div onClick={() => {startGame(PlayerType.BLACK)}}>Start game as black</div>
-        <div onClick={() => {makeRequest()}}>Make request</div>
-      </div>
-    );
+      <BrowserRouter>
+        <Switch>
+          <Route
+            path="/game/:gameId"
+            render={() => (
+              <div className="main">
+                <Game
+                  currPlayer={gameInfo.currPlayer}
+                  initTurn={PlayerType.WHITE}
+                />
+              </div>
+            )}
+          />
+          <Route
+            render={() => (
+              <div>
+                <Lobby
+                  startGame={setInGame}
+                  makeRequest={makeRequest}
+                />
+              </div>
+            )}
+          />
+        </Switch>
+      </BrowserRouter>
+    )
   }
 }
 
