@@ -8,9 +8,9 @@ import Lobby from "./Lobby";
 function App() {
   const [isLoading, setIsLoading] = useState(false);
 
-  function createGame(history: any) {
+  function createGame(history: any, createdBy: number) {
     // 1. Create the record of the game in the backend
-    axios.post("http://localhost:8080/create").then(res => {
+    axios.post("http://localhost:8080/create", {"createdBy": createdBy}).then(res => {
       const gameInfo = res.data
 
       // 2. Redirect you to the game

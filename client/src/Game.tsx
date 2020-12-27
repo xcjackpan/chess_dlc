@@ -18,44 +18,45 @@ function Game() {
     gameId: useLocation().pathname.split("/").pop(),
     gameState: GameState.LOADING,
     currPlayer: PlayerType.UNKNOWN,
-    numPlayers: 0,
   });
 
   useEffect(() => {
-    axios.get(`http://localhost:8080/join/${gameInfo.gameId}`).then(res => {
-      setGameInfo({
-        ...gameInfo,
-        currPlayer: (
-          (cookies.hasOwnProperty("chess-dlc") && cookies["chess-dlc"].hasOwnProperty("player"))
-          ? cookies["chess-dlc"]["player"] : gameInfo.currPlayer
-        ),
-        gameId: gameInfo.gameId,
-        gameState: res.data.gameState,
-        numPlayers: res.data.numPlayers,
+    if (cookies.hasOwnProperty("chess-dlc") && cookies["chess-dlc"].hasOwnProperty("player")) {
+      // TODO: Call a new endpoint to get boardstate and gamestate
+      console.log("TBD")
+    } else {
+      // If we have no cookie for this game, try join
+      axios.get(`http://localhost:8080/join/${gameInfo.gameId}`).then(res => {
+        console.log(res)
+        if (res.data.timesJoined <= 2) {
+          // Accepting a new player
+          setGameInfo({
+            ...gameInfo,
+            currPlayer: (
+              (cookies.hasOwnProperty("chess-dlc") && cookies["chess-dlc"].hasOwnProperty("player"))
+              ? cookies["chess-dlc"]["player"] : res.data.waitingFor
+            ),
+            gameId: gameInfo.gameId,
+            gameState: res.data.gameState,
+          })
+    
+          // TODO: Unset the cookie once the game ends
+          // removeCookie("chess-dlc", {path: `/game/${gameInfo.gameId}`})
+          setCookie(
+            "chess-dlc",
+            {"player": res.data.waitingFor, "gameId": gameInfo.gameId},
+            {path: `/game/${gameInfo.gameId}`, maxAge: 3600*24*3}
+          );
+        } else {
+          // TODO: Accept a spectator
+        }
       })
-    })
+    }
   }, []);
 
-  function pickColor(color: number) {
-    // TODO: Unset the cookie once the game ends
-    // removeCookie("chess-dlc", {path: `/game/${gameInfo.gameId}`})
-    setCookie("chess-dlc", {"player": color, "gameId": gameInfo.gameId}, {path: `/game/${gameInfo.gameId}`, maxAge: 3600*24*3});
-    setGameInfo({
-      ...gameInfo,
-      currPlayer: color,
-    })
-  }
-
+  console.log(gameInfo)
   if (gameInfo.gameState === GameState.LOADING) {
-    return <div>Loading...</div> 
-  } else if (gameInfo.currPlayer === PlayerType.UNKNOWN && gameInfo.numPlayers < 2) {
-    return (
-      <div>
-        Pick a color
-        <div onClick={() => {pickColor(PlayerType.WHITE)}}>White</div>
-        <div onClick={() => {pickColor(PlayerType.BLACK)}}>Black</div>
-      </div>
-    )
+    return <div>Loading...</div>
   } else {
     // Handle draft phase here
     return (
