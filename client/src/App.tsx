@@ -1,5 +1,6 @@
 import axios from "axios";
 import React, { useState } from "react";
+import { CookiesProvider } from "react-cookie";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 import Game from "./Game";
 import Lobby from "./Lobby";
@@ -11,7 +12,6 @@ function App() {
     // 1. Create the record of the game in the backend
     axios.post("http://localhost:8080/create").then(res => {
       const gameInfo = res.data
-      console.log(res)
 
       // 2. Redirect you to the game
       history.push(`/game/${gameInfo.gameId}`)
@@ -26,27 +26,29 @@ function App() {
     );
   } else {
     return (
-      <BrowserRouter>
-        <Switch>
-          <Route
-            path="/game/:gameId"
-            render={() => (
-              <div className="main">
-                <Game />
-              </div>
-            )}
-          />
-          <Route
-            render={() => (
-              <div>
-                <Lobby
-                  createGame={createGame}
-                />
-              </div>
-            )}
-          />
-        </Switch>
-      </BrowserRouter>
+      <CookiesProvider>
+        <BrowserRouter>
+          <Switch>
+            <Route
+              path="/game/:gameId"
+              render={() => (
+                <div className="main">
+                  <Game />
+                </div>
+              )}
+            />
+            <Route
+              render={() => (
+                <div>
+                  <Lobby
+                    createGame={createGame}
+                  />
+                </div>
+              )}
+            />
+          </Switch>
+        </BrowserRouter>
+      </CookiesProvider>
     )
   }
 }

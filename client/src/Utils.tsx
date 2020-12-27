@@ -6,12 +6,14 @@ export type gameprops = {
 }
 
 export const GameState = {
+  LOADING: -1,
   PLAYER_SELECT: 0,
   DRAFT: 1,
   BOARD: 2,
 }
 
 export const PlayerType = {
+  UNKNOWN: -100,
   SPECTATOR: 0,
   WHITE: 1,
   BLACK: -1,

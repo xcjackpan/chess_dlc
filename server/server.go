@@ -74,7 +74,7 @@ func handleCreateGame(w http.ResponseWriter, r *http.Request) {
       data = Game{
         GameId: candidate,
         GameState: 0,
-        NumPlayers: 1,
+        NumPlayers: 0,
       }
       ref.Set(ctx, data)
       break
@@ -102,10 +102,19 @@ func handleJoinGame(w http.ResponseWriter, r *http.Request) {
 
   ref := client.NewRef("game/" + gameId)
 
-  if err := ref.Get(ctx, &data); err != nil {
+  if err := ref.Get(ctx, &data); (err != nil || data.GameId == "") {
     log.Fatalln("Error reading from database:", err)
   }
 
+  if data.NumPlayers < 2 {
+    if err := ref.Update(ctx, map[string]interface{}{
+      "numPlayers": data.NumPlayers+1,
+    }); err != nil {
+      log.Fatalln("Error updating child:", err)
+    }
+  }
+
+  data.NumPlayers += 1
   response, err := json.Marshal(data)
   if err != nil {
     // Json parse error
