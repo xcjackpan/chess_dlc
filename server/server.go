@@ -12,14 +12,20 @@ import (
   "google.golang.org/api/option"
   "math/rand"
   "time"
+  "io/ioutil"
 )
 
 // TYPES
 type Game struct {
   GameId string `json:"gameId"`
   GameState int `json:"gameState"`
-  NumPlayers int `json:"numPlayers"`
+  WaitingFor int `json:"waitingFor"`
+  TimesJoined int `json:"timesJoined"`
   Board string `json:"board,omitempty"`
+}
+
+type CreateGameBody struct {
+  CreatedBy int `json:"createdBy"`
 }
 
 // CONSTANTS
@@ -34,6 +40,8 @@ var client *db.Client
 // HELPERS
 func enableCors(w *http.ResponseWriter) {
   (*w).Header().Set("Access-Control-Allow-Origin", "*")
+  (*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+  (*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 }
 
 func randStringRunes(n int) string {
@@ -54,6 +62,10 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 func handleCreateGame(w http.ResponseWriter, r *http.Request) {
   // Initially called to create the game in the backend
   enableCors(&w)
+  if r.Method == http.MethodOptions {
+    return
+  }
+
   ctx := context.Background()
   var candidate string
   var data Game
@@ -71,10 +83,21 @@ func handleCreateGame(w http.ResponseWriter, r *http.Request) {
 
     // 3. If ID is unused, set it and break. Otherwise, retry
     if data.GameId == "" {
+      var requestBody CreateGameBody
+      parsed, err := ioutil.ReadAll(r.Body)
+      if err != nil {
+        log.Fatalln("Error reading POST body buffer:", err)
+      }
+      if err := json.Unmarshal(parsed, &requestBody); err != nil {
+        log.Fatalln("Error unmarshalling:", err)
+      }
+
+
       data = Game{
         GameId: candidate,
         GameState: 0,
-        NumPlayers: 0,
+        WaitingFor: requestBody.CreatedBy,
+        TimesJoined: 0,
       }
       ref.Set(ctx, data)
       break
@@ -106,15 +129,14 @@ func handleJoinGame(w http.ResponseWriter, r *http.Request) {
     log.Fatalln("Error reading from database:", err)
   }
 
-  if data.NumPlayers < 2 {
-    if err := ref.Update(ctx, map[string]interface{}{
-      "numPlayers": data.NumPlayers+1,
-    }); err != nil {
-      log.Fatalln("Error updating child:", err)
-    }
+  if err := ref.Update(ctx, map[string]interface{}{
+    "waitingFor": (-1*data.WaitingFor),
+    "timesJoined": data.TimesJoined+1,
+  }); err != nil {
+    log.Fatalln("Error updating child:", err)
   }
 
-  data.NumPlayers += 1
+  data.TimesJoined += 1
   response, err := json.Marshal(data)
   if err != nil {
     // Json parse error
@@ -129,7 +151,7 @@ func handleRequests() {
   router := mux.NewRouter().StrictSlash(true)
 
   router.HandleFunc("/", handleRoot).Methods(http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodOptions)
-  router.HandleFunc("/create", handleCreateGame).Methods(http.MethodPost)
+  router.HandleFunc("/create", handleCreateGame).Methods(http.MethodPost, http.MethodOptions)
   router.HandleFunc("/join/{gameId}", handleJoinGame).Methods(http.MethodGet)
 
   log.Fatal(http.ListenAndServe(":"+port, router))
