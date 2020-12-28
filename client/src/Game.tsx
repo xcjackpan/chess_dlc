@@ -21,21 +21,26 @@ function Game() {
   });
 
   useEffect(() => {
+    // 1. Check if we have a cookie, meaning that the client has joined this game already
+    // 2. If not, try to join either as player or spectator
+    // 3. If so, just load up the board and websocket
     if (cookies.hasOwnProperty("chess-dlc") && cookies["chess-dlc"].hasOwnProperty("player")) {
-      // TODO: Call a new endpoint to get boardstate and gamestate
-      console.log("TBD")
+      axios.get(`http://localhost:8080/join/${gameInfo.gameId}`, {params: {cookiePresent: true}}).then(res => {
+        setGameInfo({
+          ...gameInfo,
+          currPlayer: cookies["chess-dlc"]["player"],
+          gameId: gameInfo.gameId,
+          gameState: res.data.gameState,
+        })
+      })
     } else {
       // If we have no cookie for this game, try join
-      axios.get(`http://localhost:8080/join/${gameInfo.gameId}`).then(res => {
-        console.log(res)
+      axios.get(`http://localhost:8080/join/${gameInfo.gameId}`, {params: {cookiePresent: false}}).then(res => {
         if (res.data.timesJoined <= 2) {
           // Accepting a new player
           setGameInfo({
             ...gameInfo,
-            currPlayer: (
-              (cookies.hasOwnProperty("chess-dlc") && cookies["chess-dlc"].hasOwnProperty("player"))
-              ? cookies["chess-dlc"]["player"] : res.data.waitingFor
-            ),
+            currPlayer: res.data.waitingFor,
             gameId: gameInfo.gameId,
             gameState: res.data.gameState,
           })
@@ -48,13 +53,17 @@ function Game() {
             {path: `/game/${gameInfo.gameId}`, maxAge: 3600*24*3}
           );
         } else {
-          // TODO: Accept a spectator
+          setGameInfo({
+            ...gameInfo,
+            currPlayer: PlayerType.SPECTATOR,
+            gameId: gameInfo.gameId,
+            gameState: res.data.gameState,
+          })
         }
       })
     }
   }, []);
 
-  console.log(gameInfo)
   if (gameInfo.gameState === GameState.LOADING) {
     return <div>Loading...</div>
   } else {

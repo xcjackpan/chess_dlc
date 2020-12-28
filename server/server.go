@@ -129,14 +129,17 @@ func handleJoinGame(w http.ResponseWriter, r *http.Request) {
     log.Fatalln("Error reading from database:", err)
   }
 
-  if err := ref.Update(ctx, map[string]interface{}{
-    "waitingFor": (-1*data.WaitingFor),
-    "timesJoined": data.TimesJoined+1,
-  }); err != nil {
-    log.Fatalln("Error updating child:", err)
+  cookiePresent := r.URL.Query()["cookiePresent"]
+  if cookiePresent[0] == "false" {
+    if err := ref.Update(ctx, map[string]interface{}{
+      "waitingFor": (-1*data.WaitingFor),
+      "timesJoined": data.TimesJoined+1,
+    }); err != nil {
+      log.Fatalln("Error updating child:", err)
+    }
+    data.TimesJoined += 1
   }
 
-  data.TimesJoined += 1
   response, err := json.Marshal(data)
   if err != nil {
     // Json parse error
