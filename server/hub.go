@@ -21,7 +21,7 @@ type Hub struct {
 
 func newHub(gameId string) *Hub {
 	return &Hub{
-		gameId: gameId
+		gameId: gameId,
 		broadcast: make(chan []byte),
 		register: make(chan *Client),
 		unregister: make(chan *Client),
@@ -56,3 +56,4 @@ func (h *Hub) run() {
 			}
 		}
 	}
+}

@@ -35,7 +35,8 @@ const gameIdLength = 8
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 // GLOBAL VARS
-var client *db.Client
+var dbClient *db.Client
+var hubMap map[string]*Hub
 
 // HELPERS
 func enableCors(w *http.ResponseWriter) {
@@ -74,7 +75,7 @@ func handleCreateGame(w http.ResponseWriter, r *http.Request) {
     // 1. Generate an ID
     candidate = randStringRunes(gameIdLength)
 
-    ref := client.NewRef("game/" + candidate)
+    ref := dbClient.NewRef("game/" + candidate)
 
     // 2. Read the ID from the database
     if err := ref.Get(ctx, &data); err != nil {
@@ -123,12 +124,14 @@ func handleJoinGame(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   gameId := vars["gameId"]
 
-  ref := client.NewRef("game/" + gameId)
+  ref := dbClient.NewRef("game/" + gameId)
 
+  // 1. Check if the game exists
   if err := ref.Get(ctx, &data); (err != nil || data.GameId == "") {
     log.Fatalln("Error reading from database:", err)
   }
 
+  // 2. If the client has no cookie for the game, then do not join as a player
   cookiePresent := r.URL.Query()["cookiePresent"]
   if cookiePresent[0] == "false" {
     if err := ref.Update(ctx, map[string]interface{}{
@@ -149,6 +152,36 @@ func handleJoinGame(w http.ResponseWriter, r *http.Request) {
   fmt.Fprintf(w, string(response))
 }
 
+func handleWebsocket(w http.ResponseWriter, r *http.Request) {
+  enableCors(&w)
+  vars := mux.Vars(r)
+  gameId := vars["gameId"]
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+  }
+  
+  var hub *Hub
+  // 3. Set up a websocket connection
+  if hubMap[gameId] == nil {
+    // Create a new hub for the game
+    hub = newHub(gameId)
+    hubMap[gameId] = hub
+  } else {
+    hub = hubMap[gameId]
+  }
+
+  client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+  client.hub.register <- client
+
+  // Allow collection of memory referenced by the caller by doing all work in
+  // new goroutines.
+  go client.writePump()
+  go client.readPump()
+}
+
 func handleRequests() {
   // creates a new instance of a mux router
   router := mux.NewRouter().StrictSlash(true)
@@ -156,6 +189,8 @@ func handleRequests() {
   router.HandleFunc("/", handleRoot).Methods(http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodOptions)
   router.HandleFunc("/create", handleCreateGame).Methods(http.MethodPost, http.MethodOptions)
   router.HandleFunc("/join/{gameId}", handleJoinGame).Methods(http.MethodGet)
+
+  router.HandleFunc("/websocket/{gameId}", handleWebsocket)
 
   log.Fatal(http.ListenAndServe(":"+port, router))
 }
@@ -174,7 +209,7 @@ func main() {
   if err != nil {
     log.Fatalln("Error initializing app:", err)
   }
-  client, err = app.Database(ctx)
+  dbClient, err = app.Database(ctx)
   if err != nil {
     log.Fatalln("Error initializing database client:", err)
   }
