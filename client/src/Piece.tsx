@@ -252,7 +252,7 @@ export class King extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
-    // TODO: Castling! And check
+    // TODO: Check
     let validKingMoves: coordinate[] = [
       [currPos[0]-1, currPos[1]-1],
       [currPos[0]+1, currPos[1]-1],
@@ -353,4 +353,13 @@ export function copyPiece(piece: Piece) {
   res.enPassantable = piece.enPassantable
   res.hasMoved = piece.hasMoved
   return res
+}
+
+export function serializePiece(piece: Piece) {
+  let pieceAsJSON: {[key:string]: string} = {}
+  for (const [key, value] of Object.entries(piece)) {
+    pieceAsJSON[key] = value
+  }
+
+  return JSON.stringify(pieceAsJSON)
 }

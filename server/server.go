@@ -153,22 +153,26 @@ func handleJoinGame(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleWebsocket(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("received")
   enableCors(&w)
   vars := mux.Vars(r)
   gameId := vars["gameId"]
 
+  upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
   }
-  
+
   var hub *Hub
   // 3. Set up a websocket connection
   if hubMap[gameId] == nil {
     // Create a new hub for the game
-    hub = newHub(gameId)
+    hub = newHub(gameId, dbClient)
     hubMap[gameId] = hub
+
+    go hub.run()
   } else {
     hub = hubMap[gameId]
   }
@@ -213,6 +217,8 @@ func main() {
   if err != nil {
     log.Fatalln("Error initializing database client:", err)
   }
+
+  hubMap = make(map[string]*Hub)
 
   handleRequests()
 }

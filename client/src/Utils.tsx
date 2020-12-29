@@ -1,8 +1,10 @@
 export type coordinate = [number, number]
 
 export type gameprops = {
+  boardState: number[][]
   currPlayer: number,
   initTurn: number,
+  sendToSocket: any,
 }
 
 export const GameState = {

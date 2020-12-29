@@ -7,6 +7,19 @@ import Board from "./Board";
 
 import "./Board.css";
 
+const testBoard = [
+  [-4,-2,-3,-5,-6,-3,-2,-4],
+  [-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [1,1,1,1,1,1,1,1],
+  [4,2,3,5,6,3,2,4]
+]
+
+
+
 function Game() {
   // Game will handle all the extra tinkering:
   // 1. Selecting players (remembering with cookies)
@@ -18,24 +31,25 @@ function Game() {
     gameId: useLocation().pathname.split("/").pop(),
     gameState: GameState.LOADING,
     currPlayer: PlayerType.UNKNOWN,
+    boardState: testBoard,
   });
+  const [webSocket, setWebSocket]: [any, any] = useState(null)
 
   useEffect(() => {
-    // 1. Check if we have a cookie, meaning that the client has joined this game already
-    // 2. If not, try to join either as player or spectator
-    // 3. If so, just load up the board and websocket
-    if (cookies.hasOwnProperty("chess-dlc") && cookies["chess-dlc"].hasOwnProperty("player")) {
-      axios.get(`http://localhost:8080/join/${gameInfo.gameId}`, {params: {cookiePresent: true}}).then(res => {
+    // 1. Try to join the game, handle the cases:
+    // a) Client has a cookie so they've already joined
+    // b) Client has no cookie, game needs a player
+    // c) Joining as a spectator
+    const cookiePresent = cookies.hasOwnProperty("chess-dlc") && cookies["chess-dlc"].hasOwnProperty("player")
+    axios.get(`http://localhost:8080/join/${gameInfo.gameId}`, {params: {cookiePresent: cookiePresent}}).then(res => {
+      if (cookiePresent) {
         setGameInfo({
           ...gameInfo,
           currPlayer: cookies["chess-dlc"]["player"],
           gameId: gameInfo.gameId,
           gameState: res.data.gameState,
         })
-      })
-    } else {
-      // If we have no cookie for this game, try join
-      axios.get(`http://localhost:8080/join/${gameInfo.gameId}`, {params: {cookiePresent: false}}).then(res => {
+      } else {
         if (res.data.timesJoined <= 2) {
           // Accepting a new player
           setGameInfo({
@@ -60,9 +74,24 @@ function Game() {
             gameState: res.data.gameState,
           })
         }
-      })
-    }
+      }
+
+      // 2. Load up the websocket
+      let ws = new WebSocket(`ws://localhost:8080/websocket/${gameInfo.gameId}`)
+      ws.onopen = () => {
+        setWebSocket(ws)
+      };
+    })
   }, []);
+
+  function sendToSocket(data: string) {
+    if (webSocket === null || webSocket.readyState !== 1) {
+      return false
+    } else {
+      webSocket.send(data)
+      return true
+    }
+  }
 
   if (gameInfo.gameState === GameState.LOADING) {
     return <div>Loading...</div>
@@ -71,8 +100,10 @@ function Game() {
     return (
       <div className="main">
         <Board
+          boardState={gameInfo.boardState}
           currPlayer={gameInfo.currPlayer}
           initTurn={PlayerType.WHITE}
+          sendToSocket={sendToSocket}
         />
       </div>
     )

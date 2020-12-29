@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./Board.css";
 import { PieceType, getPieceAt, oppositeSign, squaresEqual, coordinate, gameprops } from "./Utils";
-import { buildPiece, copyPiece, Piece } from "./Piece";
+import { buildPiece, copyPiece, Piece, serializePiece } from "./Piece";
 
 const emptyBoard = [
   [0,0,0,0,0,0,0,0],
@@ -14,16 +14,17 @@ const emptyBoard = [
   [0,0,0,0,0,0,0,0]
 ]
 
-const testBoard = [
-  [-4,-2,-3,-5,-6,-3,-2,-4],
-  [-1,-1,-1,-1,-1,-1,-1,-1],
-  [0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0],
-  [1,1,1,1,1,1,1,1],
-  [4,2,3,5,6,3,2,4]
-]
+function serializeBoard(boardState: Piece[][]) {
+  // Serializes a board of Piece objects into a sending JSON string
+  let serialized: string[][] = [[],[],[],[],[],[],[],[]]
+  boardState.forEach((row, y) => {
+    row.forEach((elem) => {
+      serialized[y].push(serializePiece(elem))
+    })
+  })
+
+  return JSON.stringify(serialized)
+}
 
 function processBoard(board: number[][]) {
   let res: Piece[][] = [[],[],[],[],[],[],[],[]]
@@ -49,11 +50,23 @@ function renderSquare(coord: coordinate, piece: number, selected: boolean, selec
 
 function Board(props: gameprops) {
   let { currPlayer, initTurn } = props
-  let processed: Piece[][] = processBoard(testBoard)
+  let processed: Piece[][] = processBoard(props.boardState)
 
   const [boardState, setBoardState]: [Piece[][], any] = useState(processed);
   const [selectedSquare, setSelectedSquare]: [coordinate, any] = useState([-1,-1])
   const [currTurn, setTurn] = useState(initTurn);
+
+  async function updateBoardState(newBoard: Piece[][]) {
+    const serialized = serializeBoard(boardState)
+    setBoardState(newBoard)
+
+    while (true) {
+      if (props.sendToSocket(serialized)) {
+        break
+      }
+      await new Promise(resolve => setTimeout(resolve, 1));
+    }
+  }
 
   function makeMove(piece: coordinate, newSquare: coordinate, extraInfo?: any) {
     // Move is guaranteed to be valid
@@ -97,7 +110,7 @@ function Board(props: gameprops) {
       })
     })
 
-    setBoardState(newBoard)
+    updateBoardState(newBoard)
   }
 
   function selectSquare(newSquare: coordinate) {
