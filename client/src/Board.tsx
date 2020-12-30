@@ -1,18 +1,20 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import "./Board.css";
 import { PieceType, getPieceAt, oppositeSign, squaresEqual, coordinate, gameprops } from "./Utils";
-import { buildPiece, copyPiece, Piece, serializePiece } from "./Piece";
+import { buildPiece, copyPiece, Piece, deserializePiece, serializePiece } from "./Piece";
 
-const emptyBoard = [
-  [0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0],
-  [0,0,0,0,0,0,0,0]
-]
+export function deserializeBoard(boardAsString: string) {
+  let parsed = JSON.parse(boardAsString)
+  let deserialized: Piece[][] = [[],[],[],[],[],[],[],[]]
+
+  parsed.forEach((row: string[], y: number) => {
+    row.forEach((pieceAsString) => {
+      deserialized[y].push(deserializePiece(pieceAsString))
+    })
+  })
+
+  return deserialized
+}
 
 function serializeBoard(boardState: Piece[][]) {
   // Serializes a board of Piece objects into a sending JSON string
@@ -26,7 +28,7 @@ function serializeBoard(boardState: Piece[][]) {
   return JSON.stringify(serialized)
 }
 
-function processBoard(board: number[][]) {
+export function processBoard(board: number[][]) {
   let res: Piece[][] = [[],[],[],[],[],[],[],[]]
   board.forEach((row, y) => {
     row.forEach((elem) => {
@@ -49,19 +51,16 @@ function renderSquare(coord: coordinate, piece: number, selected: boolean, selec
 }
 
 function Board(props: gameprops) {
-  let { currPlayer, initTurn } = props
-  let processed: Piece[][] = processBoard(props.boardState)
+  let { currPlayer, currTurn } = props
 
-  const [boardState, setBoardState]: [Piece[][], any] = useState(processed);
   const [selectedSquare, setSelectedSquare]: [coordinate, any] = useState([-1,-1])
-  const [currTurn, setTurn] = useState(initTurn);
 
   async function updateBoardState(newBoard: Piece[][]) {
-    const serialized = serializeBoard(boardState)
-    setBoardState(newBoard)
+    const serialized = serializeBoard(newBoard)
 
     while (true) {
       if (props.sendToSocket(serialized)) {
+        props.updateBoardState(newBoard)
         break
       }
       await new Promise(resolve => setTimeout(resolve, 1));
@@ -72,7 +71,7 @@ function Board(props: gameprops) {
     // Move is guaranteed to be valid
     // Build a copy of the board
     let newBoard: Piece[][] = [[],[],[],[],[],[],[],[]]
-    boardState.forEach((row, y) => {
+    props.boardState.forEach((row, y) => {
       row.forEach((elem) => {
         newBoard[y].push(copyPiece(elem))
       })
@@ -86,24 +85,24 @@ function Board(props: gameprops) {
       const yDiff = rookPos[1] - kingPos[1]
       const yInc = yDiff > 0 ? 1 : -1
 
-      newBoard[kingPos[0]][kingPos[1]+(2*yInc)] = getPieceAt(kingPos, boardState)
-      newBoard[kingPos[0]][kingPos[1]+(2*yInc)-(yInc)] = getPieceAt(rookPos, boardState)
+      newBoard[kingPos[0]][kingPos[1]+(2*yInc)] = getPieceAt(kingPos, props.boardState)
+      newBoard[kingPos[0]][kingPos[1]+(2*yInc)-(yInc)] = getPieceAt(rookPos, props.boardState)
       newBoard[kingPos[0]][kingPos[1]] = buildPiece(0)
       newBoard[rookPos[0]][rookPos[1]] = buildPiece(0)
 
     } else if (extraInfo.hasOwnProperty("enpassant") && extraInfo["enpassant"]) {
-      newBoard[newSquare[0]][newSquare[1]] = getPieceAt(piece, boardState)
+      newBoard[newSquare[0]][newSquare[1]] = getPieceAt(piece, props.boardState)
       newBoard[piece[0]][piece[1]] = buildPiece(0)
     
-      const movedPiece = getPieceAt(newSquare, boardState)
+      const movedPiece = getPieceAt(newSquare, props.boardState)
       const diff = movedPiece.type === PieceType.WHITE_PAWN ? 1 : -1
       newBoard[newSquare[0]-diff][newSquare[1]] = buildPiece(0)
     } else {
-      newBoard[newSquare[0]][newSquare[1]] = getPieceAt(piece, boardState)
+      newBoard[newSquare[0]][newSquare[1]] = getPieceAt(piece, props.boardState)
       newBoard[piece[0]][piece[1]] = buildPiece(0)
     }
 
-    newBoard[newSquare[0]][newSquare[1]].postMove(piece, newSquare, boardState)
+    newBoard[newSquare[0]][newSquare[1]].postMove(piece, newSquare, props.boardState)
     newBoard.forEach((row, y) => {
       row.forEach((elem, x) => {
         elem.turnTick([x,y], newBoard)
@@ -124,7 +123,7 @@ function Board(props: gameprops) {
     }
 
     // 2. If there is a currently selected square, check if there is a piece there. If not, select newSquare and done.
-    const pieceOnSquare: Piece = boardState[selectedSquare[0]][selectedSquare[1]]
+    const pieceOnSquare: Piece = props.boardState[selectedSquare[0]][selectedSquare[1]]
     if (pieceOnSquare.type === PieceType.NONE) {
       setSelectedSquare(newSquare)
       return
@@ -133,21 +132,22 @@ function Board(props: gameprops) {
     const isCurrentTurn = (currTurn === currPlayer)
     if (isCurrentTurn && !oppositeSign(pieceOnSquare.type, currPlayer)) {
       // 3. There is a currently selected piece, check if the new selection is a valid move. If not, select newSquare and done.
-      const [isValid, extraInfo] = pieceOnSquare.validateMove(selectedSquare, newSquare, boardState)
+      const [isValid, extraInfo] = pieceOnSquare.validateMove(selectedSquare, newSquare, props.boardState)
       if (isValid) {
         // 4. Move the piece
         makeMove(selectedSquare, newSquare, extraInfo)
         setSelectedSquare([-1, -1])
-        setTurn(currTurn*-1)
       }
     }
 
     setSelectedSquare(newSquare)
   }
 
+  console.log(props.boardState)
+
   return (
     <div className="board">
-      {boardState.map(
+      {props.boardState.map(
         (row, x) => (
           <div className="row" key={x}>
             {row.map((occupant, y) => renderSquare(

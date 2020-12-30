@@ -1,9 +1,12 @@
+import { Piece } from "./Piece";
+
 export type coordinate = [number, number]
 
 export type gameprops = {
-  boardState: number[][]
+  boardState: Piece[][]
   currPlayer: number,
-  initTurn: number,
+  currTurn: number,
+  updateBoardState: any,
   sendToSocket: any,
 }
 

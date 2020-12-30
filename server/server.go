@@ -22,6 +22,7 @@ type Game struct {
   WaitingFor int `json:"waitingFor"`
   TimesJoined int `json:"timesJoined"`
   Board string `json:"board,omitempty"`
+  CurrentTurn int `json:"currentTime"`
 }
 
 type CreateGameBody struct {
@@ -32,6 +33,7 @@ type CreateGameBody struct {
 const port = "8080"
 const databaseUrl = "https://chess-dlc-default-rtdb.firebaseio.com/"
 const gameIdLength = 8
+const clientIdLength = 4
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 // GLOBAL VARS
@@ -99,6 +101,7 @@ func handleCreateGame(w http.ResponseWriter, r *http.Request) {
         GameState: 0,
         WaitingFor: requestBody.CreatedBy,
         TimesJoined: 0,
+        CurrentTurn: 1,
       }
       ref.Set(ctx, data)
       break
@@ -153,11 +156,11 @@ func handleJoinGame(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleWebsocket(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("received")
   enableCors(&w)
   vars := mux.Vars(r)
   gameId := vars["gameId"]
-
+  
+  // 1. Upgrade the websocket connection
   upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -165,8 +168,8 @@ func handleWebsocket(w http.ResponseWriter, r *http.Request) {
 		return
   }
 
+  // 2. If we have a hub for the game already, use it. Otherwise, make one.
   var hub *Hub
-  // 3. Set up a websocket connection
   if hubMap[gameId] == nil {
     // Create a new hub for the game
     hub = newHub(gameId, dbClient)
@@ -177,7 +180,20 @@ func handleWebsocket(w http.ResponseWriter, r *http.Request) {
     hub = hubMap[gameId]
   }
 
-  client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+  // 3. Generate a new client and register it
+  candidate := ""
+  ok := true
+  for ok {
+    candidate = randStringRunes(clientIdLength)
+    _, ok = hub.clients[candidate] 
+  }
+
+  client := &Client{
+    clientId: gameId+"-"+candidate,
+    hub: hub,
+    conn: conn,
+    send: make(chan []byte, 256),
+  }
   client.hub.register <- client
 
   // Allow collection of memory referenced by the caller by doing all work in

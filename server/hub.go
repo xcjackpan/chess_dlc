@@ -12,10 +12,10 @@ type Hub struct {
 	dbClient *db.Client
 
 	// Registered clients.
-	clients map[*Client]bool
+	clients map[string]*Client
 
 	// Inbound messages from the clients.
-	broadcast chan []byte
+	broadcast chan Message
 
 	// Register requests from the clients.
 	register chan *Client
@@ -24,44 +24,49 @@ type Hub struct {
 	unregister chan *Client
 }
 
+type Message struct {
+	message []byte
+	sender string
+}
+
 func newHub(gameId string, dbClient *db.Client) *Hub {
 	return &Hub{
 		gameId: gameId,
-		broadcast: make(chan []byte),
+		broadcast: make(chan Message),
 		register: make(chan *Client),
 		unregister: make(chan *Client),
-		clients: make(map[*Client]bool),
+		clients: make(map[string]*Client),
 		dbClient: dbClient,
 	}
 }
 
 func (h *Hub) run() {
-	fmt.Println(string("starting hub"))
 	for {
 		select {
 		case client := <-h.register:
-			fmt.Println(string("registered"))
 			// If it was a register event
-			h.clients[client] = true
+			h.clients[client.clientId] = client
 		case client := <-h.unregister:
 			// If it was an unregister event
-			if _, ok := h.clients[client]; ok {
-				delete(h.clients, client)
+			if _, ok := h.clients[client.clientId]; ok {
+				delete(h.clients, client.clientId)
 				close(client.send)
 			}
 			if len(h.clients) == 0 {
 				break
 			}
 		case message := <-h.broadcast:
-			fmt.Println(string(message))
-			fmt.Println("broadcast")
+			fmt.Println(message)
 			// If we need to broadcast
-			for client := range h.clients {
-				select {
-				case client.send <- message:
-				default:
-					close(client.send)
-					delete(h.clients, client)
+			for clientId, client := range h.clients {
+				fmt.Println(clientId)
+				if clientId != message.sender {
+					select {
+						case client.send <- message.message:
+						default:
+							close(client.send)
+							delete(h.clients, client.clientId)
+					}
 				}
 			}
 		}

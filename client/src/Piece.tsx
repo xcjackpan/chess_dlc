@@ -358,8 +358,31 @@ export function copyPiece(piece: Piece) {
 export function serializePiece(piece: Piece) {
   let pieceAsJSON: {[key:string]: string} = {}
   for (const [key, value] of Object.entries(piece)) {
+    if (key === "hasMoved" && !value) {
+      continue
+    }
+    if (key === "enPassantable" && value === 0) {
+      continue
+    }
     pieceAsJSON[key] = value
   }
 
   return JSON.stringify(pieceAsJSON)
+}
+
+export function deserializePiece(pieceAsJSON: string) {
+  const pieceAsObject = JSON.parse(pieceAsJSON)
+  let piece = buildPiece(pieceAsObject.type)
+  if (pieceAsObject.hasOwnProperty("enPassantable")) {
+    piece.enPassantable = pieceAsObject["enPassantable"]
+  } else {
+    piece.enPassantable = 0
+  }
+
+  if (pieceAsObject.hasOwnProperty("hasMoved")) {
+    piece.hasMoved = pieceAsObject["hasMoved"]
+  } else {
+    piece.hasMoved = false
+  }
+  return piece
 }

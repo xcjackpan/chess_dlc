@@ -4,10 +4,12 @@ import { useCookies, Cookies } from "react-cookie";
 import { useHistory, useLocation } from "react-router-dom";
 import { PlayerType, GameState } from "./Utils";
 import Board from "./Board";
+import { deserializeBoard, processBoard } from "./Board";
+import { Piece } from "./Piece";
 
 import "./Board.css";
 
-const testBoard = [
+const startingBoard = [
   [-4,-2,-3,-5,-6,-3,-2,-4],
   [-1,-1,-1,-1,-1,-1,-1,-1],
   [0,0,0,0,0,0,0,0],
@@ -17,8 +19,6 @@ const testBoard = [
   [1,1,1,1,1,1,1,1],
   [4,2,3,5,6,3,2,4]
 ]
-
-
 
 function Game() {
   // Game will handle all the extra tinkering:
@@ -31,7 +31,8 @@ function Game() {
     gameId: useLocation().pathname.split("/").pop(),
     gameState: GameState.LOADING,
     currPlayer: PlayerType.UNKNOWN,
-    boardState: testBoard,
+    currTurn: PlayerType.WHITE,
+    boardState: processBoard(startingBoard),
   });
   const [webSocket, setWebSocket]: [any, any] = useState(null)
 
@@ -81,6 +82,21 @@ function Game() {
       ws.onopen = () => {
         setWebSocket(ws)
       };
+
+      // Since event handlers are defined once, the values they "know"
+      // are the values at the time of their definition.
+      // We use a new => function as a way to get the "fresh" state
+      ws.onmessage = (event) => {
+        const receivedBoard = deserializeBoard(event.data)
+        setGameInfo((gameInfo) => {
+          const updatedGameInfo = {
+            ...gameInfo,
+            boardState: receivedBoard,
+          }
+          console.log(updatedGameInfo)
+          return updatedGameInfo
+        })
+      }
     })
   }, []);
 
@@ -93,6 +109,14 @@ function Game() {
     }
   }
 
+  function updateBoardState(newBoard: Piece[][]) {
+    setGameInfo({
+      ...gameInfo,
+      currTurn: -1*gameInfo.currTurn,
+      boardState: newBoard,
+    }) 
+  }
+
   if (gameInfo.gameState === GameState.LOADING) {
     return <div>Loading...</div>
   } else {
@@ -102,8 +126,9 @@ function Game() {
         <Board
           boardState={gameInfo.boardState}
           currPlayer={gameInfo.currPlayer}
-          initTurn={PlayerType.WHITE}
+          currTurn={gameInfo.currTurn}
           sendToSocket={sendToSocket}
+          updateBoardState={updateBoardState}
         />
       </div>
     )
