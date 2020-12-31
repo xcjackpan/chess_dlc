@@ -1,31 +1,49 @@
 import { useState } from "react";
 import "./Board.css";
-import { PieceType, getPieceAt, oppositeSign, squaresEqual, coordinate, gameprops } from "./Utils";
+import { PieceType, getPieceAt, oppositeSign, squaresEqual, coordinate, gameprops, PlayerType } from "./Utils";
 import { buildPiece, copyPiece, Piece, deserializePiece, serializePiece } from "./Piece";
 
-export function deserializeBoard(boardAsString: string) {
-  let parsed = JSON.parse(boardAsString)
-  let deserialized: Piece[][] = [[],[],[],[],[],[],[],[]]
+export function deserializeBoardState(receivedBoardState: string, currPlayer: number) {
+  const parsed = JSON.parse(receivedBoardState)
+  let boardToReturn: Piece[][] = [[],[],[],[],[],[],[],[]]
 
-  parsed.forEach((row: string[], y: number) => {
+  parsed["boardState"].forEach((row: string[], y: number) => {
     row.forEach((pieceAsString) => {
-      deserialized[y].push(deserializePiece(pieceAsString))
+      boardToReturn[y].push(deserializePiece(pieceAsString))
     })
   })
+
+  if (currPlayer === PlayerType.BLACK) {
+    boardToReturn = flipBoard(boardToReturn)
+  }
+
+  const deserialized = {
+    "boardState": boardToReturn,
+    "currTurn": parsed["currTurn"],
+  }
 
   return deserialized
 }
 
-function serializeBoard(boardState: Piece[][]) {
+function serializeBoardState(boardState: Piece[][], currTurn: number, currPlayer: number) {
   // Serializes a board of Piece objects into a sending JSON string
+  let boardToSerialize = boardState
+  if (currPlayer === PlayerType.BLACK) {
+    boardToSerialize = flipBoard(boardToSerialize)
+  }
   let serialized: string[][] = [[],[],[],[],[],[],[],[]]
-  boardState.forEach((row, y) => {
+  boardToSerialize.forEach((row, y) => {
     row.forEach((elem) => {
       serialized[y].push(serializePiece(elem))
     })
   })
 
-  return JSON.stringify(serialized)
+  const data = {
+    "boardState": serialized,
+    "currTurn": currTurn,
+  }
+
+  return JSON.stringify(data)
 }
 
 export function processBoard(board: number[][]) {
@@ -36,6 +54,13 @@ export function processBoard(board: number[][]) {
     })
   })
   return res
+}
+
+export function flipBoard(board: Piece[][]) {
+  // Will need to reverse each row and then reverse all the columns
+  return board.slice(0).reverse().map((row) => {
+    return row.slice(0).reverse()
+  })
 }
 
 function renderSquare(coord: coordinate, piece: number, selected: boolean, selectSquare: any) {
@@ -56,7 +81,7 @@ function Board(props: gameprops) {
   const [selectedSquare, setSelectedSquare]: [coordinate, any] = useState([-1,-1])
 
   async function updateBoardState(newBoard: Piece[][]) {
-    const serialized = serializeBoard(newBoard)
+    const serialized = serializeBoardState(newBoard, currTurn*-1, currPlayer)
 
     while (true) {
       if (props.sendToSocket(serialized)) {
@@ -142,8 +167,6 @@ function Board(props: gameprops) {
 
     setSelectedSquare(newSquare)
   }
-
-  console.log(props.boardState)
 
   return (
     <div className="board">

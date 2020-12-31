@@ -4,7 +4,7 @@ import { useCookies, Cookies } from "react-cookie";
 import { useHistory, useLocation } from "react-router-dom";
 import { PlayerType, GameState } from "./Utils";
 import Board from "./Board";
-import { deserializeBoard, processBoard } from "./Board";
+import { deserializeBoardState, flipBoard, processBoard } from "./Board";
 import { Piece } from "./Piece";
 
 import "./Board.css";
@@ -87,13 +87,13 @@ function Game() {
       // are the values at the time of their definition.
       // We use a new => function as a way to get the "fresh" state
       ws.onmessage = (event) => {
-        const receivedBoard = deserializeBoard(event.data)
         setGameInfo((gameInfo) => {
+          const receivedBoardState = deserializeBoardState(event.data, gameInfo.currPlayer)
           const updatedGameInfo = {
             ...gameInfo,
-            boardState: receivedBoard,
+            boardState: receivedBoardState.boardState,
+            currTurn: receivedBoardState.currTurn,
           }
-          console.log(updatedGameInfo)
           return updatedGameInfo
         })
       }

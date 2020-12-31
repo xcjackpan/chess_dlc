@@ -115,7 +115,8 @@ export class Pawn extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
-    let diff: number = this.type > 0 ? -1 : 1
+    // TODO: diff = -1 means pawns moving from White's perspective
+    let diff: number = -1
     if (currPos[1] === newPos[1]) {
       if (currPos[0]+(diff) === newPos[0]) {
         // Moving one square forward valid only when square empty
