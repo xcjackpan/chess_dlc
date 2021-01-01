@@ -22,7 +22,6 @@ type Game struct {
   WaitingFor int `json:"waitingFor"`
   TimesJoined int `json:"timesJoined"`
   Board string `json:"board,omitempty"`
-  CurrentTurn int `json:"currentTime"`
 }
 
 type CreateGameBody struct {
@@ -101,7 +100,6 @@ func handleCreateGame(w http.ResponseWriter, r *http.Request) {
         GameState: 0,
         WaitingFor: requestBody.CreatedBy,
         TimesJoined: 0,
-        CurrentTurn: 1,
       }
       ref.Set(ctx, data)
       break

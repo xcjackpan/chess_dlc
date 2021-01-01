@@ -1,4 +1,4 @@
-import { Piece } from "./Piece";
+import { buildPiece, Piece } from "./Piece";
 
 export type coordinate = [number, number]
 
@@ -25,6 +25,7 @@ export const PlayerType = {
 }
 
 export const PieceType = {
+  INVALID: -100,
   NONE: 0,
   WHITE_PAWN: 1,
   WHITE_KNIGHT: 2,
@@ -44,8 +45,11 @@ export function squaresEqual(a: coordinate, b: coordinate) {
   return a[0] === b[0] && a[1] === b[1]
 }
 
-export function getPieceAt(coord: coordinate, boardState: any[][]) {
-  return boardState[coord[0]][coord[1]]
+export function getPieceAt(coord: coordinate, boardState: any[][]): Piece {
+  if (coord[0] >= 0 && coord[1] >= 0 && coord[0] < 8 && coord[1] < 8) {
+    return boardState[coord[0]][coord[1]]
+  }
+  return buildPiece(PieceType.INVALID)
 }
 
 export function oppositeSign(a: number, b: number) {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./Board.css";
 import { PieceType, getPieceAt, oppositeSign, squaresEqual, coordinate, gameprops, PlayerType } from "./Utils";
-import { buildPiece, copyPiece, Piece, deserializePiece, serializePiece } from "./Piece";
+import { buildPiece, copyPiece, getValidKingMoves, isSquareUnderAttack, Piece, deserializePiece, serializePiece } from "./Piece";
 
 export function deserializeBoardState(receivedBoardState: string, currPlayer: number) {
   const parsed = JSON.parse(receivedBoardState)
@@ -92,8 +92,51 @@ function Board(props: gameprops) {
     }
   }
 
+  function validateChecks(piece: coordinate, newSquare: coordinate, extraInfo?: any): [boolean, Piece[][]] {
+    const simulatedBoard = makeMove(piece, newSquare, extraInfo)
+    let enemyKing: coordinate = [-1,-1]
+    let allyKing: coordinate = [-1,-1]
+    // Find both kings
+    props.boardState.forEach((row, x) => {
+      row.forEach((elem, y) => {
+        if ([PieceType.BLACK_KING, PieceType.WHITE_KING].includes(elem.type)) {
+          if (oppositeSign(elem.type, currPlayer)) {
+            enemyKing = [x, y]
+          } else {
+            allyKing = [x, y]
+          }
+        }
+      })
+    })
+
+    // A move is valid so long as the player is not in check after the move
+    const isValid = !isSquareUnderAttack(allyKing, currPlayer, simulatedBoard)
+
+    /*
+    // Is the opponent in mate?
+    // TODO: Check if you have any pieces that can clear the attacking piece
+    // I think do this after 
+    const enemyKingMoves = getValidKingMoves(enemyKing)
+    const isEnemyCheckmate = enemyKingMoves.every((elem) => {
+      const pieceAt = getPieceAt(elem, simulatedBoard)
+      if (pieceAt.type === PieceType.INVALID) {
+        // King cannot go off board
+        return true
+      } else if (!oppositeSign(pieceAt.type, currPlayer) || pieceAt.type === PieceType.NONE) {
+        // If empty square or occupied by allied piece, check if the square is attacked by the opponent
+        // Equivalent to if the square if being defended by the current player
+        return isSquareUnderAttack(elem, -1*currPlayer, simulatedBoard)
+      } else {
+        // Has to be a piece of the same color as the King, can't go there
+        return true
+      }
+    })
+    */
+
+    return [isValid, simulatedBoard]
+  }
+
   function makeMove(piece: coordinate, newSquare: coordinate, extraInfo?: any) {
-    // Move is guaranteed to be valid
     // Build a copy of the board
     let newBoard: Piece[][] = [[],[],[],[],[],[],[],[]]
     props.boardState.forEach((row, y) => {
@@ -112,12 +155,11 @@ function Board(props: gameprops) {
 
       newBoard[kingPos[0]][kingPos[1]+(2*yInc)] = getPieceAt(kingPos, props.boardState)
       newBoard[kingPos[0]][kingPos[1]+(2*yInc)-(yInc)] = getPieceAt(rookPos, props.boardState)
-      newBoard[kingPos[0]][kingPos[1]] = buildPiece(0)
-      newBoard[rookPos[0]][rookPos[1]] = buildPiece(0)
-
+      newBoard[kingPos[0]][kingPos[1]] = buildPiece(PieceType.NONE)
+      newBoard[rookPos[0]][rookPos[1]] = buildPiece(PieceType.NONE)
     } else if (extraInfo.hasOwnProperty("enpassant") && extraInfo["enpassant"]) {
       newBoard[newSquare[0]][newSquare[1]] = getPieceAt(piece, props.boardState)
-      newBoard[piece[0]][piece[1]] = buildPiece(0)
+      newBoard[piece[0]][piece[1]] = buildPiece(PieceType.NONE)
     
       const movedPiece = getPieceAt(newSquare, props.boardState)
       const diff = movedPiece.type === PieceType.WHITE_PAWN ? 1 : -1
@@ -134,7 +176,7 @@ function Board(props: gameprops) {
       })
     })
 
-    updateBoardState(newBoard)
+    return newBoard
   }
 
   function selectSquare(newSquare: coordinate) {
@@ -157,11 +199,16 @@ function Board(props: gameprops) {
     const isCurrentTurn = (currTurn === currPlayer)
     if (isCurrentTurn && !oppositeSign(pieceOnSquare.type, currPlayer)) {
       // 3. There is a currently selected piece, check if the new selection is a valid move. If not, select newSquare and done.
-      const [isValid, extraInfo] = pieceOnSquare.validateMove(selectedSquare, newSquare, props.boardState)
-      if (isValid) {
-        // 4. Move the piece
-        makeMove(selectedSquare, newSquare, extraInfo)
-        setSelectedSquare([-1, -1])
+      const [isValidMove, extraInfo] = pieceOnSquare.validateMove(selectedSquare, newSquare, props.boardState)
+      if (isValidMove) {
+        // 4. Validate for checks and checkmates
+        const [playerNotInCheck, newBoard] = validateChecks(selectedSquare, newSquare, extraInfo)
+        if (playerNotInCheck) {
+          // 5. Move the piece
+          updateBoardState(newBoard)
+          setSelectedSquare([-1, -1])
+          return
+        }
       }
     }
 

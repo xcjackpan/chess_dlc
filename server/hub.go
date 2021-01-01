@@ -3,7 +3,8 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"log"
   "firebase.google.com/go/db"
 )
 
@@ -41,6 +42,7 @@ func newHub(gameId string, dbClient *db.Client) *Hub {
 }
 
 func (h *Hub) run() {
+  ctx := context.Background()
 	for {
 		select {
 		case client := <-h.register:
@@ -56,10 +58,15 @@ func (h *Hub) run() {
 				break
 			}
 		case message := <-h.broadcast:
-			fmt.Println(message)
+			ref := h.dbClient.NewRef("game/" + h.gameId)
+			if err := ref.Update(ctx, map[string]interface{}{
+				"board": string(message.message),
+			}); err != nil {
+				log.Fatalln("Error updating child:", err)
+			}
+
 			// If we need to broadcast
 			for clientId, client := range h.clients {
-				fmt.Println(clientId)
 				if clientId != message.sender {
 					select {
 						case client.send <- message.message:

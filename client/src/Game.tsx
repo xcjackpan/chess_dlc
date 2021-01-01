@@ -43,38 +43,43 @@ function Game() {
     // c) Joining as a spectator
     const cookiePresent = cookies.hasOwnProperty("chess-dlc") && cookies["chess-dlc"].hasOwnProperty("player")
     axios.get(`http://localhost:8080/join/${gameInfo.gameId}`, {params: {cookiePresent: cookiePresent}}).then(res => {
+      let currPlayer = PlayerType.SPECTATOR
       if (cookiePresent) {
+        // Client has already joined before
+        currPlayer = cookies["chess-dlc"]["player"]
+      } else if (res.data.timesJoined <= 2) {
+        // Accepting a new player
+        currPlayer = res.data.waitingFor
+
+        // TODO: Unset the cookie once the game ends
+        // removeCookie("chess-dlc", {path: `/game/${gameInfo.gameId}`})
+        setCookie(
+          "chess-dlc",
+          {"player": res.data.waitingFor, "gameId": gameInfo.gameId},
+          {path: `/game/${gameInfo.gameId}`, maxAge: 3600*24*3},
+        );
+      }
+
+      if (res.data.board) {
+        const receivedBoardState = deserializeBoardState(res.data.board, currPlayer)
         setGameInfo({
           ...gameInfo,
-          currPlayer: cookies["chess-dlc"]["player"],
+          currPlayer: currPlayer,
           gameId: gameInfo.gameId,
           gameState: res.data.gameState,
+          boardState: receivedBoardState.boardState,
+          currTurn: receivedBoardState.currTurn,
         })
       } else {
-        if (res.data.timesJoined <= 2) {
-          // Accepting a new player
-          setGameInfo({
-            ...gameInfo,
-            currPlayer: res.data.waitingFor,
-            gameId: gameInfo.gameId,
-            gameState: res.data.gameState,
-          })
-    
-          // TODO: Unset the cookie once the game ends
-          // removeCookie("chess-dlc", {path: `/game/${gameInfo.gameId}`})
-          setCookie(
-            "chess-dlc",
-            {"player": res.data.waitingFor, "gameId": gameInfo.gameId},
-            {path: `/game/${gameInfo.gameId}`, maxAge: 3600*24*3}
-          );
-        } else {
-          setGameInfo({
-            ...gameInfo,
-            currPlayer: PlayerType.SPECTATOR,
-            gameId: gameInfo.gameId,
-            gameState: res.data.gameState,
-          })
-        }
+        // TODO: This case is temporary until draft phase is complete
+        // Case happens when game starts and there's no board on Firebase
+        setGameInfo({
+          ...gameInfo,
+          currPlayer: currPlayer,
+          gameId: gameInfo.gameId,
+          gameState: res.data.gameState,
+          currTurn: PlayerType.WHITE,
+        })
       }
 
       // 2. Load up the websocket

@@ -62,11 +62,9 @@ function validateCastle(kingPos: coordinate, rookPos: coordinate, boardState: Pi
   }
 
   const yDiff = rookPos[1] - kingPos[1]
-  console.log(yDiff)
   const yInc = yDiff > 0 ? 1 : -1
   for (let i = 1; i < Math.abs(yDiff); i++) {
     let candidate = getPieceAt([kingPos[0], kingPos[1]+(i*yInc)], boardState)
-    console.log([kingPos[0], kingPos[1]+(i*yInc)])
     // TODO: Validate King is not passing through check for the first two squares
     if (candidate.type !== PieceType.NONE) {
       return false
@@ -74,6 +72,111 @@ function validateCastle(kingPos: coordinate, rookPos: coordinate, boardState: Pi
   }
 
   return true
+}
+
+function getValidKnightMoves(coords: coordinate): coordinate[] {
+  return [
+    [coords[0]-1, coords[1]-2],
+    [coords[0]+1, coords[1]-2],
+    [coords[0]-1, coords[1]+2],
+    [coords[0]+1, coords[1]+2],
+    [coords[0]-2, coords[1]-1],
+    [coords[0]+2, coords[1]-1],
+    [coords[0]-2, coords[1]+1],
+    [coords[0]+2, coords[1]+1],
+  ]
+}
+
+export function getValidKingMoves(coords: coordinate): coordinate[] {
+  return [
+    [coords[0]-1, coords[1]-1],
+    [coords[0]+1, coords[1]-1],
+    [coords[0]-1, coords[1]+1],
+    [coords[0]+1, coords[1]+1],
+    [coords[0], coords[1]-1],
+    [coords[0]+1, coords[1]],
+    [coords[0]-1, coords[1]],
+    [coords[0], coords[1]+1],
+  ]
+}
+
+export function isSquareUnderAttack(targetSquare: coordinate, currPlayer: number, boardState: Piece[][]) {
+  const validAttackingKnights: coordinate[] = getValidKnightMoves(targetSquare)
+  const isAttackedByKnight = validAttackingKnights.some((elem) => {
+    const pieceAt = getPieceAt(elem, boardState)
+    return ((Math.abs(pieceAt.type) === PieceType.WHITE_KNIGHT) && oppositeSign(pieceAt.type, currPlayer))
+  })
+
+  const validAttackingPawns: coordinate[] = [
+    [targetSquare[0]-1, targetSquare[1]-1],
+    [targetSquare[0]-1, targetSquare[1]+1],
+  ]
+  const isAttackedByPawn = validAttackingPawns.some((elem) => {
+    const pieceAt = getPieceAt(elem, boardState)
+    return ((Math.abs(pieceAt.type) === PieceType.WHITE_PAWN) && oppositeSign(pieceAt.type, currPlayer))
+  })
+
+  const validAttackingKings: coordinate[] = getValidKingMoves(targetSquare)
+  const isAttackedByKing = validAttackingKings.some((elem) => {
+    const pieceAt = getPieceAt(elem, boardState)
+    return ((Math.abs(pieceAt.type) === PieceType.WHITE_KING) && oppositeSign(pieceAt.type, currPlayer))
+  })
+
+  const cardinalIncs = [
+    [1,0],
+    [0,1],
+    [-1,0],
+    [0,-1]
+  ]
+  const cardinalAttackers = [
+    // Use WHITE pieces since we're absolute valuing
+    PieceType.WHITE_ROOK,
+    PieceType.WHITE_QUEEN,
+  ]
+  const isAttackedCardinally = cardinalIncs.some((increments) => {
+    // Increments is an [xInc, yInc]
+    let pieceAtType = PieceType.NONE
+    let xInc = increments[0]
+    let yInc = increments[1]
+    while (pieceAtType === PieceType.NONE) {
+      pieceAtType = getPieceAt([targetSquare[0] + xInc, targetSquare[1] + yInc], boardState).type
+      xInc += increments[0]
+      yInc += increments[1]
+    }
+    return (cardinalAttackers.includes(Math.abs(pieceAtType)) && oppositeSign(pieceAtType, currPlayer))
+  })
+
+  const diagonalIncs = [
+    [1,1],
+    [-1,1],
+    [1,-1],
+    [-1,-1]
+  ]
+  const diagonalAttackers = [
+    // Use WHITE pieces since we're absolute valuing
+    PieceType.WHITE_BISHOP,
+    PieceType.WHITE_QUEEN,
+  ]
+  const isAttackedDiagonally = diagonalIncs.some((increments) => {
+    // Increments is an [xInc, yInc]
+    let pieceAtType = 0
+    let xInc = increments[0]
+    let yInc = increments[1]
+    while (pieceAtType === 0) {
+      pieceAtType = getPieceAt([targetSquare[0] + xInc, targetSquare[1] + yInc], boardState).type
+      xInc += increments[0]
+      yInc += increments[1]
+    }
+    return (diagonalAttackers.includes(Math.abs(pieceAtType)) && oppositeSign(pieceAtType, currPlayer))
+  })
+
+  return (
+    isAttackedByKing ||
+    isAttackedByKnight ||
+    isAttackedByPawn ||
+    isAttackedCardinally ||
+    isAttackedDiagonally
+  )
 }
 
 export abstract class Piece {
@@ -95,9 +198,26 @@ export abstract class Piece {
   }
 }
 
+
+export class Invalid extends Piece {
+  // For board boundaries
+  constructor() {
+    super(PieceType.INVALID)
+  }
+
+  validateMove() {
+    return [false, {}];
+  }
+
+  postMove() {}
+
+  turnTick() {}
+}
+
+
 export class None extends Piece {
   constructor() {
-    super(0)
+    super(PieceType.NONE)
   }
 
   validateMove() {
@@ -182,16 +302,7 @@ export class Knight extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
-    let validKnightMoves: coordinate[] = [
-      [currPos[0]-1, currPos[1]-2],
-      [currPos[0]+1, currPos[1]-2],
-      [currPos[0]-1, currPos[1]+2],
-      [currPos[0]+1, currPos[1]+2],
-      [currPos[0]-2, currPos[1]-1],
-      [currPos[0]+2, currPos[1]-1],
-      [currPos[0]-2, currPos[1]+1],
-      [currPos[0]+2, currPos[1]+1],
-    ]
+    let validKnightMoves: coordinate[] = getValidKnightMoves(currPos)
     let validKnightMove = false
     validKnightMoves.forEach((elem) => {
       if (squaresEqual(elem, newPos)) {
@@ -253,17 +364,7 @@ export class King extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
-    // TODO: Check
-    let validKingMoves: coordinate[] = [
-      [currPos[0]-1, currPos[1]-1],
-      [currPos[0]+1, currPos[1]-1],
-      [currPos[0]-1, currPos[1]+1],
-      [currPos[0]+1, currPos[1]+1],
-      [currPos[0], currPos[1]-1],
-      [currPos[0]+1, currPos[1]],
-      [currPos[0]-1, currPos[1]],
-      [currPos[0], currPos[1]+1],
-    ]
+    let validKingMoves: coordinate[] = getValidKingMoves(currPos)
     let validKingMove = false
     validKingMoves.forEach((elem) => {
       if (squaresEqual(elem, newPos)) {
@@ -316,7 +417,9 @@ export class Queen extends Piece {
 }
 
 export function buildPiece(type: number) {
-  if (type === PieceType.WHITE_PAWN || type === PieceType.BLACK_PAWN) {
+  if (type === PieceType.INVALID) {
+    return new Invalid()
+  } else if (type === PieceType.WHITE_PAWN || type === PieceType.BLACK_PAWN) {
     return new Pawn(type)
   } else if (type === PieceType.WHITE_BISHOP || type === PieceType.BLACK_BISHOP) {
     return new Bishop(type)
@@ -336,7 +439,10 @@ export function copyPiece(piece: Piece) {
   // For now, this is pretty similar to buildPiece but will copy
   // properties specific to the piece (ie. counters)
   let res
-  if (piece.type === PieceType.WHITE_PAWN || piece.type === PieceType.BLACK_PAWN) {
+  if (piece.type === PieceType.INVALID) {
+    // TODO: Should never happen
+    return new Invalid()
+  } else if (piece.type === PieceType.WHITE_PAWN || piece.type === PieceType.BLACK_PAWN) {
     res = new Pawn(piece.type)
   } else if (piece.type === PieceType.WHITE_BISHOP || piece.type === PieceType.BLACK_BISHOP) {
     res = new Bishop(piece.type)
