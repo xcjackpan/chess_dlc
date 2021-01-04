@@ -2,6 +2,8 @@ import { buildPiece, Piece } from "./Piece";
 
 export type coordinate = [number, number]
 
+export type move = [coordinate, coordinate, any]
+
 export type gameprops = {
   boardState: Piece[][]
   currPlayer: number,
@@ -53,5 +55,8 @@ export function getPieceAt(coord: coordinate, boardState: any[][]): Piece {
 }
 
 export function oppositeSign(a: number, b: number) {
+  if (a == 0 || b == 0) {
+    return true
+  }
   return a < 0 ? b > 0 : b < 0
 }

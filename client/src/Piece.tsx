@@ -1,5 +1,9 @@
 import { PieceType, squaresEqual, oppositeSign, getPieceAt, coordinate } from "./Utils";
 
+function coordinateWithinBoard(coord: coordinate) {
+  return (coord[0] < 8 && coord[1] < 8 && coord[0] >= 0 && coord[1] >= 0)
+}
+
 function validateDiagMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]): boolean {
   let xDiff = newPos[0] - currPos[0]
   let yDiff = newPos[1] - currPos[1]
@@ -74,7 +78,7 @@ function validateCastle(kingPos: coordinate, rookPos: coordinate, boardState: Pi
   return true
 }
 
-function getValidKnightMoves(coords: coordinate): coordinate[] {
+export function getValidKnightMoves(coords: coordinate): coordinate[] {
   return [
     [coords[0]-1, coords[1]-2],
     [coords[0]+1, coords[1]-2],
@@ -235,24 +239,27 @@ export class Pawn extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
+    if (!coordinateWithinBoard(newPos)) {
+      return [false, {}]
+    }
     // TODO: diff = -1 means pawns moving from White's perspective
     let diff: number = -1
     if (currPos[1] === newPos[1]) {
       if (currPos[0]+(diff) === newPos[0]) {
         // Moving one square forward valid only when square empty
-        return [boardState[newPos[0]][newPos[1]].type === PieceType.NONE, {}]
+        return [getPieceAt(newPos, boardState).type === PieceType.NONE, {}]
       } else if (currPos[0]+(2*diff) === newPos[0]) {
         // Moving two squares valid only when on starting square
         return [(
-          boardState[newPos[0]][newPos[1]].type === PieceType.NONE
+          getPieceAt(newPos, boardState).type === PieceType.NONE
           && !this.hasMoved
         ), {}]
       }
     } else if ([currPos[1]-1, currPos[1]+1].includes(newPos[1]) && currPos[0]+diff === newPos[0]) {
       // Capture
-      if (oppositeSign(getPieceAt(newPos, boardState).type, this.type)) {
+      if (getPieceAt(newPos, boardState).type !== PieceType.NONE && oppositeSign(getPieceAt(newPos, boardState).type, this.type)) {
         return [true, {}]
-      } else if (boardState[newPos[0]-diff][newPos[1]].type === (this.type*-1) && boardState[newPos[0]-diff][newPos[1]].enPassantable > 0) {
+      } else if (getPieceAt([newPos[0]-diff, newPos[1]], boardState).type === (this.type*-1) && getPieceAt([newPos[0]-diff, newPos[1]], boardState).enPassantable > 0) {
         return [true, {"enpassant": true}]
       }
     }
@@ -284,6 +291,9 @@ export class Bishop extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
+    if (!coordinateWithinBoard(newPos)) {
+      return [false, {}]
+    }
     return [validateDiagMove(currPos, newPos, boardState), {}]
   }
 
@@ -302,6 +312,9 @@ export class Knight extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
+    if (!coordinateWithinBoard(newPos)) {
+      return [false, {}]
+    }
     let validKnightMoves: coordinate[] = getValidKnightMoves(currPos)
     let validKnightMove = false
     validKnightMoves.forEach((elem) => {
@@ -333,6 +346,9 @@ export class Rook extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
+    if (!coordinateWithinBoard(newPos)) {
+      return [false, {}]
+    }
     const isValidCardinalMove = validateCardinalMove(currPos, newPos, boardState)
     if (!isValidCardinalMove) {
       // Check castling
@@ -364,6 +380,9 @@ export class King extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
+    if (!coordinateWithinBoard(newPos)) {
+      return [false, {}]
+    }
     let validKingMoves: coordinate[] = getValidKingMoves(currPos)
     let validKingMove = false
     validKingMoves.forEach((elem) => {
@@ -402,6 +421,9 @@ export class Queen extends Piece {
   }
 
   validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
+    if (!coordinateWithinBoard(newPos)) {
+      return [false, {}]
+    }
     const isDiag = validateDiagMove(currPos, newPos, boardState)
     const isCardinal = validateCardinalMove(currPos, newPos, boardState)
     return [(isDiag || isCardinal), {}];

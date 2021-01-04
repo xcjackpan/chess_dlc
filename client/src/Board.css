@@ -1,11 +1,11 @@
 .row:nth-of-type(even) .square:nth-of-type(even),
 .row:nth-of-type(odd) .square:nth-of-type(odd) {
-  background: #7D8796;
+  background: #E8EBEF;
 }
 
 .row:nth-of-type(odd) .square:nth-of-type(even),
 .row:nth-of-type(even) .square:nth-of-type(odd) {
-  background: #E8EBEF;
+  background: #7D8796;
 }
 
 .selected {
