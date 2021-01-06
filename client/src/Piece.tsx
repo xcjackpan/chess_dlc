@@ -63,9 +63,6 @@ function validateCastle(kingPos: coordinate, rookPos: coordinate, boardState: Pi
   const currPlayer = king.type > 0 ? 1 : -1
 
 
-  console.log(king.hasMoved, rook.hasMoved)
-  console.log("king: " + king.hasMoved)
-  console.log("rook: " + rook.hasMoved)
   if (king.hasMoved || rook.hasMoved || kingPos[0] !== rookPos[0]) {
     return false
   }
