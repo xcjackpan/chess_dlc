@@ -2,10 +2,22 @@ import { useState } from "react";
 import "./Board.css";
 import { PieceType, getPieceAt, oppositeSign, squaresEqual, coordinate, move, gameprops, PlayerType } from "./Utils";
 import { buildPiece, copyPiece, getValidKnightMoves, getValidKingMoves, isSquareUnderAttack, Piece, deserializePiece, serializePiece } from "./Piece";
+import BlackBishop from "./merida_new/bb.svg"
+import BlackKnight from "./merida_new/bn.svg"
+import BlackPawn from "./merida_new/bp.svg"
+import BlackQueen from "./merida_new/bq.svg"
+import BlackKing from "./merida_new/bk.svg"
+import BlackRook from "./merida_new/br.svg"
+import WhiteBishop from "./merida_new/wb.svg"
+import WhiteKnight from "./merida_new/wn.svg"
+import WhitePawn from "./merida_new/wp.svg"
+import WhiteQueen from "./merida_new/wq.svg"
+import WhiteKing from "./merida_new/wk.svg"
+import WhiteRook from "./merida_new/wr.svg"
+
 
 export function deserializeBoardState(receivedBoardState: string, currPlayer: number) {
   const parsed = JSON.parse(receivedBoardState)
-  console.log(parsed)
   let boardToReturn: Piece[][] = [[],[],[],[],[],[],[],[]]
 
   parsed["boardState"].forEach((row: string[], y: number) => {
@@ -44,7 +56,6 @@ function serializeBoardState(boardState: Piece[][], currTurn: number, currPlayer
     })
   })
 
-  console.log("checkmate: " + checkmate)
   let data: any = {
     "boardState": serialized,
     "currTurn": currTurn,
@@ -74,13 +85,43 @@ export function flipBoard(board: Piece[][]) {
 }
 
 function renderSquare(coord: coordinate, piece: number, selected: boolean, selectSquare: any) {
+  
+  function getAsset(piece: number) {
+    switch(piece) {
+      case PieceType.BLACK_BISHOP:
+        return BlackBishop
+      case PieceType.BLACK_KING:
+        return BlackKing
+      case PieceType.BLACK_KNIGHT:
+        return BlackKnight
+      case PieceType.BLACK_PAWN:
+        return BlackPawn
+      case PieceType.BLACK_QUEEN:
+        return BlackQueen
+      case PieceType.BLACK_ROOK:
+        return BlackRook
+      case PieceType.WHITE_BISHOP:
+        return WhiteBishop
+      case PieceType.WHITE_KING:
+        return WhiteKing
+      case PieceType.WHITE_KNIGHT:
+        return WhiteKnight
+      case PieceType.WHITE_PAWN:
+        return WhitePawn
+      case PieceType.WHITE_QUEEN:
+        return WhiteQueen
+      case PieceType.WHITE_ROOK:
+        return WhiteRook
+    }
+  }
+
   return (
     <div
       className={`square${selected ? ` selected` : ``}`}
       key={`${coord[0]}-${coord[1]}`}
       onClick={()=>{selectSquare(coord)}}
     >
-      {`${piece}`}
+      <img className="piece" src={getAsset(piece)} />
     </div>
   )
 }
