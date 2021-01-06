@@ -60,7 +60,12 @@ function validateCardinalMove(currPos: coordinate, newPos: coordinate, boardStat
 function validateCastle(kingPos: coordinate, rookPos: coordinate, boardState: Piece[][]): boolean {
   const king = getPieceAt(kingPos, boardState)
   const rook = getPieceAt(rookPos, boardState)
+  const currPlayer = king.type > 0 ? 1 : -1
 
+
+  console.log(king.hasMoved, rook.hasMoved)
+  console.log("king: " + king.hasMoved)
+  console.log("rook: " + rook.hasMoved)
   if (king.hasMoved || rook.hasMoved || kingPos[0] !== rookPos[0]) {
     return false
   }
@@ -69,10 +74,19 @@ function validateCastle(kingPos: coordinate, rookPos: coordinate, boardState: Pi
   const yInc = yDiff > 0 ? 1 : -1
   for (let i = 1; i < Math.abs(yDiff); i++) {
     let candidate = getPieceAt([kingPos[0], kingPos[1]+(i*yInc)], boardState)
-    // TODO: Validate King is not passing through check for the first two squares
+
     if (candidate.type !== PieceType.NONE) {
       return false
     }
+  }
+
+  // Can't castle while in check or through check
+  if (
+    isSquareUnderAttack(kingPos, currPlayer, boardState)
+    || isSquareUnderAttack([kingPos[0], kingPos[1]+(yInc)], currPlayer, boardState)
+    || isSquareUnderAttack([kingPos[0], kingPos[1]+(2*yInc)], currPlayer, boardState)
+  ) {
+    return false
   }
 
   return true

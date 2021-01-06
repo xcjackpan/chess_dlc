@@ -126,7 +126,7 @@ function renderSquare(coord: coordinate, piece: number, selected: boolean, selec
   )
 }
 
-function makeMove(boardState: Piece[][], piece: coordinate, newSquare: coordinate, extraInfo?: any) {
+function makeMove(boardState: Piece[][], oldSquare: coordinate, newSquare: coordinate, extraInfo?: any) {
   // Build a copy of the board
   let newBoard: Piece[][] = [[],[],[],[],[],[],[],[]]
   boardState.forEach((row, y) => {
@@ -134,6 +134,8 @@ function makeMove(boardState: Piece[][], piece: coordinate, newSquare: coordinat
       newBoard[y].push(copyPiece(elem))
     })
   })
+
+  let postMovePieces = []
 
   if (extraInfo.hasOwnProperty("castle") && extraInfo["castle"]) {
     const rookPos = extraInfo["rookPos"]
@@ -143,23 +145,37 @@ function makeMove(boardState: Piece[][], piece: coordinate, newSquare: coordinat
     const yDiff = rookPos[1] - kingPos[1]
     const yInc = yDiff > 0 ? 1 : -1
 
-    newBoard[kingPos[0]][kingPos[1]+(2*yInc)] = getPieceAt(kingPos, boardState)
-    newBoard[kingPos[0]][kingPos[1]+(2*yInc)-(yInc)] = getPieceAt(rookPos, boardState)
+    const newRookPos = [kingPos[0], kingPos[1]+(2*yInc)-(yInc)]
+    const newKingPos = [kingPos[0], kingPos[1]+(2*yInc)]
+
+    newBoard[newKingPos[0]][newKingPos[1]] = getPieceAt(kingPos, boardState)
+    newBoard[newRookPos[0]][newRookPos[1]] = getPieceAt(rookPos, boardState)
+
+    postMovePieces.push([kingPos, newKingPos])
+    postMovePieces.push([rookPos, newRookPos])
+
     newBoard[kingPos[0]][kingPos[1]] = buildPiece(PieceType.NONE)
     newBoard[rookPos[0]][rookPos[1]] = buildPiece(PieceType.NONE)
   } else if (extraInfo.hasOwnProperty("enpassant") && extraInfo["enpassant"]) {
-    newBoard[newSquare[0]][newSquare[1]] = getPieceAt(piece, boardState)
-    newBoard[piece[0]][piece[1]] = buildPiece(PieceType.NONE)
+    postMovePieces.push([oldSquare, newSquare])
+
+    newBoard[newSquare[0]][newSquare[1]] = getPieceAt(oldSquare, boardState)
+    newBoard[oldSquare[0]][oldSquare[1]] = buildPiece(PieceType.NONE)
   
     const movedPiece = getPieceAt(newSquare, boardState)
     const diff = movedPiece.type === PieceType.WHITE_PAWN ? 1 : -1
     newBoard[newSquare[0]-diff][newSquare[1]] = buildPiece(0)
   } else {
-    newBoard[newSquare[0]][newSquare[1]] = getPieceAt(piece, boardState)
-    newBoard[piece[0]][piece[1]] = buildPiece(0)
+    postMovePieces.push([oldSquare, newSquare])
+
+    newBoard[newSquare[0]][newSquare[1]] = getPieceAt(oldSquare, boardState)
+    newBoard[oldSquare[0]][oldSquare[1]] = buildPiece(0)
   }
 
-  newBoard[newSquare[0]][newSquare[1]].postMove(piece, newSquare, boardState)
+  postMovePieces.forEach((elem) => {
+    newBoard[elem[1][0]][elem[1][1]].postMove(elem[0], elem[1], boardState)
+  })
+
   newBoard.forEach((row, y) => {
     row.forEach((elem, x) => {
       elem.turnTick([x,y], newBoard)
@@ -345,8 +361,6 @@ function Board(props: gameprops) {
         const [playerInCheck, opponentInCheck, newBoard] = validateChecks(selectedSquare, newSquare, extraInfo)
         if (!playerInCheck) {
           // 5. If the opponent is in check, see if we have a mate
-          console.log(opponentInCheck)
-          console.log(isOpponentMated(newBoard))
           updateBoardState(newBoard, opponentInCheck && isOpponentMated(newBoard))
           setSelectedSquare([-1, -1])
           return
