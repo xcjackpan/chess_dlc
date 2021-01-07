@@ -1,9 +1,8 @@
 import { useHistory } from "react-router-dom";
 import { PlayerType } from "./Utils";
-import "./Board.css";
 
 function Lobby(props: any) {
-  const { startGame, createGame } = props
+  const { createGame } = props
   const history = useHistory()
 
   return (

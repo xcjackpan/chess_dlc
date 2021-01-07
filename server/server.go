@@ -135,13 +135,20 @@ func handleJoinGame(w http.ResponseWriter, r *http.Request) {
   // 2. If the client has no cookie for the game, then do not join as a player
   cookiePresent := r.URL.Query()["cookiePresent"]
   if cookiePresent[0] == "false" {
+    gameState := data.GameState
+    if data.TimesJoined == 1 {
+      // If we already have one player, we are about to have another
+      gameState = 1
+    }
     if err := ref.Update(ctx, map[string]interface{}{
       "waitingFor": (-1*data.WaitingFor),
       "timesJoined": data.TimesJoined+1,
+      "gameState": gameState,
     }); err != nil {
       log.Fatalln("Error updating child:", err)
     }
     data.TimesJoined += 1
+    data.GameState = gameState
   }
 
   response, err := json.Marshal(data)

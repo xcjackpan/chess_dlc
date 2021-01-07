@@ -5,6 +5,7 @@ import { useHistory, useLocation } from "react-router-dom";
 import { PlayerType, GameState } from "./Utils";
 import Board from "./Board";
 import { deserializeBoardState, flipBoard, processBoard } from "./Board";
+import Draft from "./Draft";
 import { Piece } from "./Piece";
 
 import "./Board.css";
@@ -124,8 +125,14 @@ function Game() {
 
   if (gameInfo.gameState === GameState.LOADING) {
     return <div>Loading...</div>
+  } else if (gameInfo.gameState === GameState.DRAFT) {
+    return (
+      <div className="main">
+        <Draft />
+      </div>
+    )
   } else {
-    // Handle draft phase here
+    // Both player select and game use the board
     return (
       <div className="main">
         <Board
