@@ -21,6 +21,17 @@ const startingBoard = [
   [4,2,3,5,6,3,2,4]
 ]
 
+const emptyBoard = [
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0]
+]
+
 function Game() {
   // Game will handle all the extra tinkering:
   // 1. Selecting players (remembering with cookies)
@@ -33,7 +44,7 @@ function Game() {
     gameState: GameState.LOADING,
     currPlayer: PlayerType.UNKNOWN,
     currTurn: PlayerType.WHITE,
-    boardState: processBoard(startingBoard),
+    boardState: processBoard(emptyBoard),
   });
   const [webSocket, setWebSocket]: [any, any] = useState(null)
 
@@ -93,6 +104,7 @@ function Game() {
       // are the values at the time of their definition.
       // We use a new => function as a way to get the "fresh" state
       ws.onmessage = (event) => {
+        // TODO: Enter draft stage
         setGameInfo((gameInfo) => {
           const receivedBoardState = deserializeBoardState(event.data, gameInfo.currPlayer)
           const updatedGameInfo = {
@@ -125,10 +137,13 @@ function Game() {
 
   if (gameInfo.gameState === GameState.LOADING) {
     return <div>Loading...</div>
-  } else if (gameInfo.gameState === GameState.DRAFT) {
+  } else if (gameInfo.gameState === GameState.DRAFT || gameInfo.gameState === GameState.PLAYER_SELECT) {
     return (
       <div className="main">
-        <Draft />
+        <Draft
+          currPlayer={gameInfo.currPlayer}
+          sendToSocket={sendToSocket}
+        />
       </div>
     )
   } else {

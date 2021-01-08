@@ -84,7 +84,7 @@ export function flipBoard(board: Piece[][]) {
   })
 }
 
-function renderSquare(coord: coordinate, piece: number, selected: boolean, selectSquare: any) {
+export function renderSquare(coord: coordinate, piece: number, selected: boolean, onSelect: any) {
   
   function getAsset(piece: number) {
     switch(piece) {
@@ -119,7 +119,7 @@ function renderSquare(coord: coordinate, piece: number, selected: boolean, selec
     <div
       className={`square${selected ? ` selected` : ``}`}
       key={`${coord[0]}-${coord[1]}`}
-      onClick={()=>{selectSquare(coord)}}
+      onClick={()=>{onSelect(coord)}}
     >
       <img className="piece" src={getAsset(piece)} />
     </div>

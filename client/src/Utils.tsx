@@ -47,6 +47,16 @@ export function squaresEqual(a: coordinate, b: coordinate) {
   return a[0] === b[0] && a[1] === b[1]
 }
 
+export function squaresContainedBy(arr: coordinate[], target: coordinate) {
+  let found = false
+  arr.forEach((elem) => {
+    if (squaresEqual(elem, target)) {
+      found = true
+    }
+  })
+  return found
+}
+
 export function getPieceAt(coord: coordinate, boardState: any[][]): Piece {
   if (coord[0] >= 0 && coord[1] >= 0 && coord[0] < 8 && coord[1] < 8) {
     return boardState[coord[0]][coord[1]]
@@ -55,7 +65,7 @@ export function getPieceAt(coord: coordinate, boardState: any[][]): Piece {
 }
 
 export function oppositeSign(a: number, b: number) {
-  if (a == 0 || b == 0) {
+  if (a === 0 || b === 0) {
     return true
   }
   return a < 0 ? b > 0 : b < 0

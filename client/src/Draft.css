@@ -1,0 +1,38 @@
+.row:nth-of-type(even) .square:nth-of-type(even),
+.row:nth-of-type(odd) .square:nth-of-type(odd) {
+  background: #E8EBEF;
+}
+
+.row:nth-of-type(odd) .square:nth-of-type(even),
+.row:nth-of-type(even) .square:nth-of-type(odd) {
+  background: #7D8796;
+}
+
+.selected {
+  background: #629924 !important;
+}
+
+.square {
+  width: 9vh;
+  height: 9vh;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.draft {
+  margin: 5vh 5vw;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.piece {
+  padding: 0;
+  max-width: 100%;
+}
