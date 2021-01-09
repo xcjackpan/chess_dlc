@@ -43,7 +43,7 @@ export function deserializeBoardState(receivedBoardState: string, currPlayer: nu
   return deserialized
 }
 
-function serializeBoardState(boardState: Piece[][], currTurn: number, currPlayer: number, checkmate: boolean) {
+export function serializeBoardState(boardState: Piece[][], currTurn: number, currPlayer: number, checkmate: boolean) {
   // Serializes a board of Piece objects into a sending JSON string
   let boardToSerialize = boardState
   if (currPlayer === PlayerType.BLACK) {
@@ -68,8 +68,9 @@ function serializeBoardState(boardState: Piece[][], currTurn: number, currPlayer
 }
 
 export function processBoard(board: number[][]) {
-  let res: Piece[][] = [[],[],[],[],[],[],[],[]]
+  let res: Piece[][] = []
   board.forEach((row, y) => {
+    res.push([])
     row.forEach((elem) => {
       res[y].push(buildPiece(elem))
     })

@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useHistory } from "react-router-dom";
 import "./Draft.css";
 import React, { useEffect, useState } from "react";
@@ -11,15 +12,15 @@ const emptyWhiteDraft = [
 
 const emptyBlackDraft = [
   [0,0,0,0,0,0,0,0],
-  [0,0,0,0,-6,0,0,0],
+  [0,0,0,-6,0,0,0,0],
 ]
 
 const pointTotal = 39
 
-const kingSquare: coordinate = [1,4]
 const bishopSquares: coordinate[] = [[1,2], [1,5]]
 const knightSquares: coordinate[] = [[1,1], [1,6]]
-const queenSquare: coordinate = [1,3]
+const whiteQueenSquare: coordinate = [1,3]
+const blackQueenSquare: coordinate = [1,4]
 const rookSquares: coordinate[] = [[1,0], [1,7]]
 
 const rookPieces: number[] = [PieceType.NONE, PieceType.WHITE_ROOK]
@@ -61,7 +62,7 @@ function pieceToPoints(piece: number) {
 function Draft(props: any) {
   const history = useHistory()
 
-  let { currPlayer, sendToSocket } = props
+  let { currPlayer, submitDraft } = props
   const [currDraft, setCurrDraft]: [number[][], any] = useState(currPlayer === PlayerType.BLACK ? emptyBlackDraft : emptyWhiteDraft)
   const [currPoints, setPoints]: [number, any] = useState(pointTotal)
   const [selectedSquare, setSelectedSquare]: [coordinate, any] = useState([-1,-1])
@@ -80,7 +81,9 @@ function Draft(props: any) {
     let res: number[] = []
     if (selectedSquare[0] === 0) {
       res = pawnPieces
-    } else if (squaresEqual(selectedSquare, queenSquare)) {
+    } else if (currPlayer === PlayerType.WHITE && squaresEqual(selectedSquare, whiteQueenSquare)) {
+      res = queenPieces
+    } else if (currPlayer === PlayerType.BLACK && squaresEqual(selectedSquare, blackQueenSquare)) {
       res = queenPieces
     } else if (squaresContainedBy(rookSquares, selectedSquare)) {
       res = rookPieces
@@ -140,6 +143,7 @@ function Draft(props: any) {
         )}
       </div>
       <div className="points">{currPoints}</div>
+      <div onClick={() => submitDraft(currDraft)}>submit</div>
     </div>
   )
 }

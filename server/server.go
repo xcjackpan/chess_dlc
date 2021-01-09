@@ -28,6 +28,11 @@ type CreateGameBody struct {
   CreatedBy int `json:"createdBy"`
 }
 
+type SubmitDraftBody struct {
+  Draft string `json:"draft"`
+  CurrPlayer int `json:"currPlayer"`
+}
+
 // CONSTANTS
 const port = "8080"
 const databaseUrl = "https://chess-dlc-default-rtdb.firebaseio.com/"
@@ -160,6 +165,24 @@ func handleJoinGame(w http.ResponseWriter, r *http.Request) {
   fmt.Fprintf(w, string(response))
 }
 
+func handleSubmitDraft(w http.ResponseWriter, r *http.Request) {
+  enableCors(&w)
+  if r.Method == http.MethodOptions {
+    return
+  }
+
+  var requestBody SubmitDraftBody
+  parsed, err := ioutil.ReadAll(r.Body)
+  if err != nil {
+    log.Fatalln("Error reading POST body buffer:", err)
+  }
+  if err := json.Unmarshal(parsed, &requestBody); err != nil {
+    log.Fatalln("Error unmarshalling:", err)
+  }
+
+  fmt.Println(requestBody.CurrPlayer)
+}
+
 func handleWebsocket(w http.ResponseWriter, r *http.Request) {
   enableCors(&w)
   vars := mux.Vars(r)
@@ -214,6 +237,7 @@ func handleRequests() {
   router.HandleFunc("/", handleRoot).Methods(http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodOptions)
   router.HandleFunc("/create", handleCreateGame).Methods(http.MethodPost, http.MethodOptions)
   router.HandleFunc("/join/{gameId}", handleJoinGame).Methods(http.MethodGet)
+  router.HandleFunc("/draft/{gameId}", handleSubmitDraft).Methods(http.MethodPost, http.MethodOptions)
 
   router.HandleFunc("/websocket/{gameId}", handleWebsocket)
 

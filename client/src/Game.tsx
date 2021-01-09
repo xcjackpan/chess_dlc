@@ -6,7 +6,7 @@ import { PlayerType, GameState } from "./Utils";
 import Board from "./Board";
 import { deserializeBoardState, flipBoard, processBoard } from "./Board";
 import Draft from "./Draft";
-import { Piece } from "./Piece";
+import { serializePiece, Piece } from "./Piece";
 
 import "./Board.css";
 
@@ -44,7 +44,7 @@ function Game() {
     gameState: GameState.LOADING,
     currPlayer: PlayerType.UNKNOWN,
     currTurn: PlayerType.WHITE,
-    boardState: processBoard(emptyBoard),
+    boardState: processBoard(startingBoard),
   });
   const [webSocket, setWebSocket]: [any, any] = useState(null)
 
@@ -127,6 +127,31 @@ function Game() {
     }
   }
 
+  function submitDraft(currDraft: number[][]) {
+    // 1. Submit the draft to the backend
+    let processedCurrDraft = processBoard(currDraft)
+  
+    let draftToSerialize = processedCurrDraft
+    if (gameInfo.currPlayer === PlayerType.BLACK) {
+      draftToSerialize = flipBoard(draftToSerialize)
+    }
+    let serialized: string[][] = []
+    draftToSerialize.forEach((row, y) => {
+      serialized.push([])
+      row.forEach((elem) => {
+        serialized[y].push(serializePiece(elem))
+      })
+    })
+
+    const stringified = JSON.stringify(serialized)
+    console.log(stringified.substring(1, stringified.length-1))
+    axios.post(
+      `http://localhost:8080/draft/${gameInfo.gameId}`,
+      {"currPlayer": gameInfo.currPlayer, "draft": stringified.substring(1, stringified.length-1)},
+    )
+  }
+  
+
   function updateBoardState(newBoard: Piece[][]) {
     setGameInfo({
       ...gameInfo,
@@ -137,12 +162,13 @@ function Game() {
 
   if (gameInfo.gameState === GameState.LOADING) {
     return <div>Loading...</div>
-  } else if (gameInfo.gameState === GameState.DRAFT || gameInfo.gameState === GameState.PLAYER_SELECT) {
+    // TODO: Debugging
+  } else if (true && (gameInfo.gameState === GameState.DRAFT || gameInfo.gameState === GameState.PLAYER_SELECT)) {
     return (
       <div className="main">
         <Draft
           currPlayer={gameInfo.currPlayer}
-          sendToSocket={sendToSocket}
+          submitDraft={submitDraft}
         />
       </div>
     )
