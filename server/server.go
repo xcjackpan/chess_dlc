@@ -22,6 +22,8 @@ type Game struct {
   WaitingFor int `json:"waitingFor"`
   TimesJoined int `json:"timesJoined"`
   Board string `json:"board,omitempty"`
+  WhiteDraft string `json:"whiteDraft"`
+  BlackDraft string `json:"blackDraft"`
 }
 
 type CreateGameBody struct {
@@ -58,6 +60,13 @@ func randStringRunes(n int) string {
       b[i] = letterRunes[rand.Intn(len(letterRunes))]
   }
   return string(b)
+}
+
+func createBoardFromDrafts(whiteDraft string, blackDraft string) string {
+  // Constructs a board in stringified-JSON from a whiteDraft and blackDraft
+  stringifiedBoard := `{"boardState":[`+blackDraft+ `,["{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}"],["{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}"],["{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}"],["{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}","{\"type\":0}"],`+whiteDraft+ `],"currTurn":1}`
+  
+  return stringifiedBoard
 }
 
 // SANDBOX
@@ -125,7 +134,6 @@ func handleJoinGame(w http.ResponseWriter, r *http.Request) {
   // Called upon loading into the game
   enableCors(&w)
   ctx := context.Background()
-  var data Game
 
   vars := mux.Vars(r)
   gameId := vars["gameId"]
@@ -133,6 +141,7 @@ func handleJoinGame(w http.ResponseWriter, r *http.Request) {
   ref := dbClient.NewRef("game/" + gameId)
 
   // 1. Check if the game exists
+  var data Game
   if err := ref.Get(ctx, &data); (err != nil || data.GameId == "") {
     log.Fatalln("Error reading from database:", err)
   }
@@ -171,6 +180,7 @@ func handleSubmitDraft(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  // 1. Get information from the initial request
   var requestBody SubmitDraftBody
   parsed, err := ioutil.ReadAll(r.Body)
   if err != nil {
@@ -180,7 +190,62 @@ func handleSubmitDraft(w http.ResponseWriter, r *http.Request) {
     log.Fatalln("Error unmarshalling:", err)
   }
 
-  fmt.Println(requestBody.CurrPlayer)
+  ctx := context.Background()
+
+  vars := mux.Vars(r)
+  gameId := vars["gameId"]
+
+  ref := dbClient.NewRef("game/" + gameId)
+
+  // 2. Record the draft boards. Note: We could do an optimization here in the logic
+  // to avoid an extra read but it makes the code real messy
+  if requestBody.CurrPlayer == 1 {
+    if err := ref.Update(ctx, map[string]interface{}{
+      "whiteDraft": requestBody.Draft,
+    }); err != nil {
+      log.Fatalln("Error updating child:", err)
+    }
+  } else if requestBody.CurrPlayer == -1 {
+    if err := ref.Update(ctx, map[string]interface{}{
+      "blackDraft": requestBody.Draft,
+    }); err != nil {
+      log.Fatalln("Error updating child:", err)
+    }
+  }
+
+  // 3. Get the game record
+  var data Game
+  if err := ref.Get(ctx, &data); (err != nil || data.GameId == "") {
+    log.Fatalln("Error reading from database:", err)
+  }
+
+  if data.WhiteDraft != "" && data.BlackDraft != "" {
+    // 4. We have a draft by both players, set up the board
+    stringifiedBoard := createBoardFromDrafts(data.WhiteDraft, data.BlackDraft)
+    
+    if err := ref.Update(ctx, map[string]interface{}{
+      "blackDraft": "",
+      "whiteDraft": "",
+      "board": stringifiedBoard,
+      "gameState": 2,
+    }); err != nil {
+      log.Fatalln("Error updating child:", err)
+    }
+
+    // 5. Pump the board into the hub for the clients once draft is over
+    var hub *Hub
+    if hubMap[gameId] == nil {
+      log.Fatalln("Missing hub for game" + gameId)
+    } else {
+      hub = hubMap[gameId]
+    }
+  
+		message := Message{
+			sender: "#",
+			message: []byte(stringifiedBoard),
+		}
+    hub.broadcast <- message
+  }
 }
 
 func handleWebsocket(w http.ResponseWriter, r *http.Request) {
@@ -237,7 +302,7 @@ func handleRequests() {
   router.HandleFunc("/", handleRoot).Methods(http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodOptions)
   router.HandleFunc("/create", handleCreateGame).Methods(http.MethodPost, http.MethodOptions)
   router.HandleFunc("/join/{gameId}", handleJoinGame).Methods(http.MethodGet)
-  router.HandleFunc("/draft/{gameId}", handleSubmitDraft).Methods(http.MethodPost, http.MethodOptions)
+  router.HandleFunc("/draft/{gameId}", handleSubmitDraft).Methods(http.MethodPost,  http.MethodOptions)
 
   router.HandleFunc("/websocket/{gameId}", handleWebsocket)
 

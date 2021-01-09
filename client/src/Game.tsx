@@ -109,6 +109,7 @@ function Game() {
           const receivedBoardState = deserializeBoardState(event.data, gameInfo.currPlayer)
           const updatedGameInfo = {
             ...gameInfo,
+            gameState: GameState.BOARD, // By the time we receive stuff from the websocket, should be in game
             boardState: receivedBoardState.boardState,
             currTurn: receivedBoardState.currTurn,
           }
@@ -127,8 +128,13 @@ function Game() {
     }
   }
 
-  function submitDraft(currDraft: number[][]) {
-    // 1. Submit the draft to the backend
+  function submitDraft(currDraft: number[][], currPoints: number) {
+    if (currPoints < 0) {
+      // Illegal board
+      return
+    }
+
+    // Submit the draft to the backend
     let processedCurrDraft = processBoard(currDraft)
   
     let draftToSerialize = processedCurrDraft
@@ -144,7 +150,6 @@ function Game() {
     })
 
     const stringified = JSON.stringify(serialized)
-    console.log(stringified.substring(1, stringified.length-1))
     axios.post(
       `http://localhost:8080/draft/${gameInfo.gameId}`,
       {"currPlayer": gameInfo.currPlayer, "draft": stringified.substring(1, stringified.length-1)},

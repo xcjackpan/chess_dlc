@@ -110,6 +110,7 @@ function Draft(props: any) {
         }
       })
     })
+
     setCurrDraft(newDraft)
     setPoints(newPointTotal)
   }
@@ -143,7 +144,7 @@ function Draft(props: any) {
         )}
       </div>
       <div className="points">{currPoints}</div>
-      <div onClick={() => submitDraft(currDraft)}>submit</div>
+      <div onClick={() => submitDraft(currDraft, currPoints)}>submit</div>
     </div>
   )
 }
