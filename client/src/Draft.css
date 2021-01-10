@@ -1,29 +1,11 @@
-.row:nth-of-type(even) .square:nth-of-type(even),
-.row:nth-of-type(odd) .square:nth-of-type(odd) {
-  background: #E8EBEF;
-}
-
-.row:nth-of-type(odd) .square:nth-of-type(even),
-.row:nth-of-type(even) .square:nth-of-type(odd) {
-  background: #7D8796;
-}
-
-.selected {
-  background: #629924 !important;
-}
-
-.square {
-  width: 9vh;
-  height: 9vh;
-}
-
-.row {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-}
-
 .draft {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.draft .draft-board {
   margin: 5vh 5vw;
   padding: 0;
   display: flex;
@@ -32,7 +14,35 @@
   align-items: center;
 }
 
-.piece {
+.draft .piece {
   padding: 0;
   max-width: 100%;
+}
+
+.draft .available-pieces {
+  height: 15vh;
+}
+
+.draft .points-and-submit {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 15%;
+}
+
+.draft .points-and-submit .points {
+  font-size: 40px;
+}
+
+.draft .info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: left;
+  margin-top: 5vh;
+  width: 40%;
+}
+
+.draft .info p {
+  font-size: 25px;
 }

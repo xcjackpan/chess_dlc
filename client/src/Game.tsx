@@ -170,25 +170,21 @@ function Game() {
     // TODO: Debugging
   } else if (true && (gameInfo.gameState === GameState.DRAFT || gameInfo.gameState === GameState.PLAYER_SELECT)) {
     return (
-      <div className="main">
-        <Draft
-          currPlayer={gameInfo.currPlayer}
-          submitDraft={submitDraft}
-        />
-      </div>
+      <Draft
+        currPlayer={gameInfo.currPlayer}
+        submitDraft={submitDraft}
+      />
     )
   } else {
     // Both player select and game use the board
     return (
-      <div className="main">
-        <Board
-          boardState={gameInfo.boardState}
-          currPlayer={gameInfo.currPlayer}
-          currTurn={gameInfo.currTurn}
-          sendToSocket={sendToSocket}
-          updateBoardState={updateBoardState}
-        />
-      </div>
+      <Board
+        boardState={gameInfo.boardState}
+        currPlayer={gameInfo.currPlayer}
+        currTurn={gameInfo.currTurn}
+        sendToSocket={sendToSocket}
+        updateBoardState={updateBoardState}
+      />
     )
   }
 

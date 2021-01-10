@@ -39,7 +39,7 @@ function App() {
             />
             <Route
               render={() => (
-                <div>
+                <div className="main">
                   <Lobby
                     createGame={createGame}
                   />

@@ -1,9 +1,9 @@
-import axios from "axios";
 import { useHistory } from "react-router-dom";
 import "./Draft.css";
 import React, { useEffect, useState } from "react";
 import { coordinate, PieceType, PlayerType, squaresContainedBy, squaresEqual } from "./Utils";
 import { renderSquare } from "./Board";
+import Button from '@material-ui/core/Button';
 
 const emptyWhiteDraft = [
   [0,0,0,0,0,0,0,0],
@@ -28,6 +28,8 @@ const bishopPieces: number[] = [PieceType.NONE, PieceType.WHITE_BISHOP]
 const knightPieces: number[] = [PieceType.NONE, PieceType.WHITE_KNIGHT]
 const queenPieces: number[] = [PieceType.NONE, PieceType.WHITE_QUEEN]
 const pawnPieces: number[] = [PieceType.NONE, PieceType.WHITE_PAWN]
+
+const allPieces: number[] = [PieceType.NONE, PieceType.WHITE_ROOK, PieceType.WHITE_BISHOP, PieceType.WHITE_KNIGHT, PieceType.WHITE_QUEEN, PieceType.WHITE_PAWN]
 
 function pieceToPoints(piece: number) {
   switch(piece) {
@@ -78,7 +80,16 @@ function Draft(props: any) {
   }
 
   function availablePieces() {
+    // Balance-wise, I'm not sure how broken it is to restrict draft pieces to a square...
+    // If I need to rebalance the game, here is where we can configure the possible drafts
+    if (squaresEqual(selectedSquare, [-1, -1])) {
+      return []
+    }
+    let res = allPieces
+
+    /*
     let res: number[] = []
+
     if (selectedSquare[0] === 0) {
       res = pawnPieces
     } else if (currPlayer === PlayerType.WHITE && squaresEqual(selectedSquare, whiteQueenSquare)) {
@@ -92,6 +103,7 @@ function Draft(props: any) {
     } else if (squaresContainedBy(knightSquares, selectedSquare)) {
       res = knightPieces
     }
+    */
 
     return res.map((elem) => currPlayer*elem)
   }
@@ -116,8 +128,8 @@ function Draft(props: any) {
   }
 
   return (
-    <div>
-      <div className="draft">
+    <div className="draft">
+      <div className="draft-board">
         {currDraft.map(
           (row, x) => (
             <div className="row" key={x}>
@@ -131,20 +143,49 @@ function Draft(props: any) {
           )
         )}
       </div>
-      <div className="row">
-        {availablePieces().map(
-          (piece, idx) => {
-            return renderSquare(
-              [-1,idx],
-              piece,
-              squaresEqual(selectedSquare, [-1,idx]),
-              () => {draftPiece(piece)},
-            )
-          }
-        )}
+      <div className="available-pieces">
+        <div className="row">
+          {availablePieces().map(
+            (piece, idx) => {
+              return renderSquare(
+                [-1,idx],
+                piece,
+                squaresEqual(selectedSquare, [-1,idx]),
+                () => {draftPiece(piece)},
+              )
+            }
+          )}
+        </div>
       </div>
-      <div className="points">{currPoints}</div>
-      <div onClick={() => submitDraft(currDraft, currPoints)}>submit</div>
+
+      <div className="points-and-submit">
+        <div className="points"><strong>{currPoints}</strong></div>
+        <Button variant="contained" size="large" onClick={() => submitDraft(currDraft, currPoints)}>
+          <span className="button-text">Submit draft</span>
+        </Button>
+      </div>
+
+      <br/>
+
+      <div className="info">
+        <p>
+          This is the draft phase. Here, you can configure your board in the interface above before squaring off against
+          your opponent.
+        </p>
+
+        <p>
+          Select a square to see what pieces are possible to be drafted there. Hit Submit when you're done. When both you and your opponent
+          have submitted drafts, you'll automatically be brought into the game phase.
+        </p>
+
+        <p>
+          A few ground rules here:
+          <ul>
+            <li><strong>The king cannot be moved</strong></li>
+            <li><strong>A draft is valid if and only if it has a point total greater than or equal to 0</strong></li>
+          </ul>
+        </p>
+      </div>
     </div>
   )
 }
