@@ -44,6 +44,7 @@ function Game() {
     gameState: GameState.LOADING,
     currPlayer: PlayerType.UNKNOWN,
     currTurn: PlayerType.WHITE,
+    currWinner: PlayerType.UNKNOWN,
     boardState: processBoard(startingBoard),
   });
   const [webSocket, setWebSocket]: [any, any] = useState(null)
@@ -81,16 +82,7 @@ function Game() {
           gameState: res.data.gameState,
           boardState: receivedBoardState.boardState,
           currTurn: receivedBoardState.currTurn,
-        })
-      } else {
-        // TODO: This case is temporary until draft phase is complete
-        // Case happens when game starts and there's no board on Firebase
-        setGameInfo({
-          ...gameInfo,
-          currPlayer: currPlayer,
-          gameId: gameInfo.gameId,
-          gameState: res.data.gameState,
-          currTurn: PlayerType.WHITE,
+          currWinner: receivedBoardState.hasOwnProperty("winner") ? receivedBoardState.winner : PlayerType.UNKNOWN,
         })
       }
 
@@ -112,6 +104,7 @@ function Game() {
             gameState: GameState.BOARD, // By the time we receive stuff from the websocket, should be in game
             boardState: receivedBoardState.boardState,
             currTurn: receivedBoardState.currTurn,
+            currWinner: receivedBoardState.hasOwnProperty("winner") ? receivedBoardState.winner : PlayerType.UNKNOWN,
           }
           return updatedGameInfo
         })
@@ -168,7 +161,7 @@ function Game() {
   if (gameInfo.gameState === GameState.LOADING) {
     return <div>Loading...</div>
     // TODO: Debugging
-  } else if (true && (gameInfo.gameState === GameState.DRAFT || gameInfo.gameState === GameState.PLAYER_SELECT)) {
+  } else if (gameInfo.gameState === GameState.DRAFT || gameInfo.gameState === GameState.PLAYER_SELECT) {
     return (
       <Draft
         currPlayer={gameInfo.currPlayer}
@@ -182,6 +175,7 @@ function Game() {
         boardState={gameInfo.boardState}
         currPlayer={gameInfo.currPlayer}
         currTurn={gameInfo.currTurn}
+        currWinner={gameInfo.currWinner}
         sendToSocket={sendToSocket}
         updateBoardState={updateBoardState}
       />

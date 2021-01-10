@@ -8,6 +8,7 @@ export type gameprops = {
   boardState: Piece[][]
   currPlayer: number,
   currTurn: number,
+  currWinner: number,
   updateBoardState: any,
   sendToSocket: any,
 }

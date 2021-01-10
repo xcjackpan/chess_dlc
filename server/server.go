@@ -69,6 +69,11 @@ func createBoardFromDrafts(whiteDraft string, blackDraft string) string {
   return stringifiedBoard
 }
 
+func cleanUpHub(gameId string) {
+  // Delete the entry in the hubMap. Since this is the only place the hub is kept, the GC should take care of the hub
+  delete(hubMap, gameId)
+}
+
 // SANDBOX
 func handleRoot(w http.ResponseWriter, r *http.Request) {
   enableCors(&w)
@@ -268,7 +273,7 @@ func handleWebsocket(w http.ResponseWriter, r *http.Request) {
     hub = newHub(gameId, dbClient)
     hubMap[gameId] = hub
 
-    go hub.run()
+    go hub.run(cleanUpHub)
   } else {
     hub = hubMap[gameId]
   }

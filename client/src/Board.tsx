@@ -2,6 +2,12 @@ import { useState } from "react";
 import "./Board.css";
 import { PieceType, getPieceAt, oppositeSign, squaresEqual, coordinate, move, gameprops, PlayerType } from "./Utils";
 import { buildPiece, copyPiece, getValidKnightMoves, getValidKingMoves, isSquareUnderAttack, Piece, deserializePiece, serializePiece } from "./Piece";
+import Button from '@material-ui/core/Button';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
 import BlackBishop from "./merida_new/bb.svg"
 import BlackKnight from "./merida_new/bn.svg"
 import BlackPawn from "./merida_new/bp.svg"
@@ -36,14 +42,12 @@ export function deserializeBoardState(receivedBoardState: string, currPlayer: nu
   }
   if (parsed.hasOwnProperty("winner")) {
     deserialized["winner"] = parsed["winner"]
-    // TODO: Proper modal
-    window.alert("Winner is " + (parsed["winner"] === 1 ? "white" : "black"))
   }
 
   return deserialized
 }
 
-export function serializeBoardState(boardState: Piece[][], currTurn: number, currPlayer: number, checkmate: boolean) {
+export function serializeBoardState(boardState: Piece[][], currTurn: number, currPlayer: number, checkmate: boolean, stalemate: boolean) {
   // Serializes a board of Piece objects into a sending JSON string
   let boardToSerialize = boardState
   if (currPlayer === PlayerType.BLACK) {
@@ -62,6 +66,8 @@ export function serializeBoardState(boardState: Piece[][], currTurn: number, cur
   }
   if (checkmate) {
     data["winner"] = currPlayer
+  } else if (stalemate) {
+    data["winner"] = PlayerType.SPECTATOR
   }
 
   return JSON.stringify(data)
@@ -187,12 +193,13 @@ function makeMove(boardState: Piece[][], oldSquare: coordinate, newSquare: coord
 }
 
 function Board(props: gameprops) {
-  let { currPlayer, currTurn } = props
+  let { currPlayer, currTurn, currWinner } = props
 
   const [selectedSquare, setSelectedSquare]: [coordinate, any] = useState([-1,-1])
+  const [displayGameEnd, setDisplayGameEnd] = useState(currWinner)
 
-  async function updateBoardState(newBoard: Piece[][], checkmate: boolean) {
-    const serialized = serializeBoardState(newBoard, currTurn*-1, currPlayer, checkmate)
+  async function updateBoardState(newBoard: Piece[][], checkmate: boolean, stalemate: boolean) {
+    const serialized = serializeBoardState(newBoard, currTurn*-1, currPlayer, checkmate, stalemate)
 
     while (true) {
       if (props.sendToSocket(serialized)) {
@@ -362,7 +369,8 @@ function Board(props: gameprops) {
         const [playerInCheck, opponentInCheck, newBoard] = validateChecks(selectedSquare, newSquare, extraInfo)
         if (!playerInCheck) {
           // 5. If the opponent is in check, see if we have a mate
-          updateBoardState(newBoard, opponentInCheck && isOpponentMated(newBoard))
+          const opponentHasNoValidMoves = isOpponentMated(newBoard)
+          updateBoardState(newBoard, opponentInCheck && opponentHasNoValidMoves, !opponentInCheck && opponentHasNoValidMoves)
           setSelectedSquare([-1, -1])
           return
         }
@@ -372,20 +380,43 @@ function Board(props: gameprops) {
     setSelectedSquare(newSquare)
   }
 
+  const stalemateText = "Draw by stalemate. No more valid moves."
+  const checkmateText = " has won by checkmate."
+
   return (
-    <div className="board">
-      {props.boardState.map(
-        (row, x) => (
-          <div className="row" key={x}>
-            {row.map((occupant, y) => renderSquare(
-              [x,y],
-              occupant.type,
-              squaresEqual(selectedSquare, [x,y]),
-              selectSquare,
-            ))}
-          </div>
-        )
-      )}
+    <div>
+      <Dialog
+        fullWidth={true}
+        open={displayGameEnd !== PlayerType.UNKNOWN}
+        onClose={() => {setDisplayGameEnd(PlayerType.UNKNOWN)}}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle>
+          <span className="game-over-text">
+            {currWinner === PlayerType.SPECTATOR ? stalemateText : (currWinner === PlayerType.WHITE ? "White" : "Black") + checkmateText}
+          </span>
+        </DialogTitle>
+        <DialogActions>
+          <Button onClick={() => {setDisplayGameEnd(PlayerType.UNKNOWN)}}>
+            GG!
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <div className="board">
+        {props.boardState.map(
+          (row, x) => (
+            <div className="row" key={x}>
+              {row.map((occupant, y) => renderSquare(
+                [x,y],
+                occupant.type,
+                squaresEqual(selectedSquare, [x,y]),
+                selectSquare,
+              ))}
+            </div>
+          )
+        )}
+      </div>
     </div>
   );
 }

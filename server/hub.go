@@ -5,6 +5,8 @@ package main
 import (
 	"context"
 	"log"
+	"fmt"
+
   "firebase.google.com/go/db"
 )
 
@@ -41,41 +43,44 @@ func newHub(gameId string, dbClient *db.Client) *Hub {
 	}
 }
 
-func (h *Hub) run() {
+func (h *Hub) run(cleanUpHub func(string)) {
+	defer cleanUpHub(h.gameId)
   ctx := context.Background()
 	for {
 		select {
-		case client := <-h.register:
-			// If it was a register event
-			h.clients[client.clientId] = client
-		case client := <-h.unregister:
-			// If it was an unregister event
-			if _, ok := h.clients[client.clientId]; ok {
-				delete(h.clients, client.clientId)
-				close(client.send)
-			}
-			if len(h.clients) == 0 {
-				break
-			}
-		case message := <-h.broadcast:
-			ref := h.dbClient.NewRef("game/" + h.gameId)
-			if err := ref.Update(ctx, map[string]interface{}{
-				"board": string(message.message),
-			}); err != nil {
-				log.Fatalln("Error updating child:", err)
-			}
+			case client := <-h.register:
+				// If it was a register event
+				h.clients[client.clientId] = client
+			case client := <-h.unregister:
+				// If it was an unregister event
+				// Remove the hub
+				if _, ok := h.clients[client.clientId]; ok {
+					delete(h.clients, client.clientId)
+					close(client.send)
+				}
 
-			// If we need to broadcast
-			for clientId, client := range h.clients {
-				if clientId != message.sender {
-					select {
-						case client.send <- message.message:
-						default:
-							close(client.send)
-							delete(h.clients, client.clientId)
+				if len(h.clients) == 0 {
+					return
+				}
+			case message := <-h.broadcast:
+				ref := h.dbClient.NewRef("game/" + h.gameId)
+				if err := ref.Update(ctx, map[string]interface{}{
+					"board": string(message.message),
+				}); err != nil {
+					log.Fatalln("Error updating child:", err)
+				}
+
+				// If we need to broadcast
+				for clientId, client := range h.clients {
+					if clientId != message.sender {
+						select {
+							case client.send <- message.message:
+							default:
+								close(client.send)
+								delete(h.clients, client.clientId)
+						}
 					}
 				}
-			}
 		}
 	}
 }
