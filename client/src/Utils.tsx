@@ -36,12 +36,14 @@ export const PieceType = {
   WHITE_ROOK: 4,
   WHITE_QUEEN: 5,
   WHITE_KING: 6,
+  WHITE_ELEPHANT: 7,
   BLACK_PAWN: -1,
   BLACK_KNIGHT: -2,
   BLACK_BISHOP: -3,
   BLACK_ROOK: -4,
   BLACK_QUEEN: -5,
   BLACK_KING: -6,
+  BLACK_ELEPHANT: -7,
 }
 
 export function squaresEqual(a: coordinate, b: coordinate) {

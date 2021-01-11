@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"log"
-	"fmt"
 
   "firebase.google.com/go/db"
 )

@@ -1,7 +1,6 @@
-import { useHistory } from "react-router-dom";
 import "./Draft.css";
-import React, { useEffect, useState } from "react";
-import { coordinate, PieceType, PlayerType, squaresContainedBy, squaresEqual } from "./Utils";
+import React, { useState } from "react";
+import { coordinate, PieceType, PlayerType, squaresEqual } from "./Utils";
 import { renderSquare } from "./Board";
 import Button from '@material-ui/core/Button';
 
@@ -29,7 +28,15 @@ const knightPieces: number[] = [PieceType.NONE, PieceType.WHITE_KNIGHT]
 const queenPieces: number[] = [PieceType.NONE, PieceType.WHITE_QUEEN]
 const pawnPieces: number[] = [PieceType.NONE, PieceType.WHITE_PAWN]
 
-const allPieces: number[] = [PieceType.NONE, PieceType.WHITE_ROOK, PieceType.WHITE_BISHOP, PieceType.WHITE_KNIGHT, PieceType.WHITE_QUEEN, PieceType.WHITE_PAWN]
+const allPieces: number[] = [
+  PieceType.NONE,
+  PieceType.WHITE_ROOK,
+  PieceType.WHITE_BISHOP,
+  PieceType.WHITE_KNIGHT,
+  PieceType.WHITE_QUEEN,
+  PieceType.WHITE_PAWN,
+  PieceType.WHITE_ELEPHANT,
+]
 
 function pieceToPoints(piece: number) {
   switch(piece) {
@@ -57,19 +64,24 @@ function pieceToPoints(piece: number) {
       return 9
     case PieceType.WHITE_ROOK:
       return 5
+    case PieceType.WHITE_ELEPHANT:
+      return 7
+    case PieceType.BLACK_ELEPHANT:
+      return 7
   }
   return 0
 }
 
 function Draft(props: any) {
-  const history = useHistory()
-
   let { currPlayer, submitDraft } = props
   const [currDraft, setCurrDraft]: [number[][], any] = useState(currPlayer === PlayerType.BLACK ? emptyBlackDraft : emptyWhiteDraft)
   const [currPoints, setPoints]: [number, any] = useState(pointTotal)
   const [selectedSquare, setSelectedSquare]: [coordinate, any] = useState([-1,-1])
 
   function selectSquare(newSquare: coordinate) {
+    if (currPlayer === PlayerType.SPECTATOR) {
+      return
+    }
     // 1. Check if there is a currently selected square. If not, select newSquare and done.
     if (squaresEqual(newSquare, selectedSquare)) {
       setSelectedSquare([-1, -1])

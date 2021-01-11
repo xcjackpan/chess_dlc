@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { useCookies, Cookies } from "react-cookie";
-import { useHistory, useLocation } from "react-router-dom";
+import { useCookies } from "react-cookie";
+import { useLocation } from "react-router-dom";
 import { PlayerType, GameState } from "./Utils";
 import Board from "./Board";
 import { deserializeBoardState, flipBoard, processBoard } from "./Board";
@@ -64,8 +64,6 @@ function Game() {
         // Accepting a new player
         currPlayer = res.data.waitingFor
 
-        // TODO: Unset the cookie once the game ends
-        // removeCookie("chess-dlc", {path: `/game/${gameInfo.gameId}`})
         setCookie(
           "chess-dlc",
           {"player": res.data.waitingFor, "gameId": gameInfo.gameId},
@@ -83,6 +81,15 @@ function Game() {
           boardState: receivedBoardState.boardState,
           currTurn: receivedBoardState.currTurn,
           currWinner: receivedBoardState.hasOwnProperty("winner") ? receivedBoardState.winner : PlayerType.UNKNOWN,
+        })
+      } else {
+        // Case happens when game starts and there's no board on Firebase
+        setGameInfo({
+          ...gameInfo,
+          currPlayer: currPlayer,
+          gameId: gameInfo.gameId,
+          gameState: res.data.gameState,
+          currTurn: PlayerType.WHITE,
         })
       }
 

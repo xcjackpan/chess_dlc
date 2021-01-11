@@ -5,8 +5,6 @@ import { buildPiece, copyPiece, getValidKnightMoves, getValidKingMoves, isSquare
 import Button from '@material-ui/core/Button';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import BlackBishop from "./merida_new/bb.svg"
 import BlackKnight from "./merida_new/bn.svg"
@@ -20,6 +18,8 @@ import WhitePawn from "./merida_new/wp.svg"
 import WhiteQueen from "./merida_new/wq.svg"
 import WhiteKing from "./merida_new/wk.svg"
 import WhiteRook from "./merida_new/wr.svg"
+import WhiteElephant from "./merida_new/we.svg"
+import BlackElephant from "./merida_new/be.svg"
 
 
 export function deserializeBoardState(receivedBoardState: string, currPlayer: number) {
@@ -95,6 +95,10 @@ export function renderSquare(coord: coordinate, piece: number, selected: boolean
   
   function getAsset(piece: number) {
     switch(piece) {
+      case PieceType.WHITE_ELEPHANT:
+        return WhiteElephant
+      case PieceType.BLACK_ELEPHANT:
+        return BlackElephant
       case PieceType.BLACK_BISHOP:
         return BlackBishop
       case PieceType.BLACK_KING:
@@ -177,6 +181,11 @@ function makeMove(boardState: Piece[][], oldSquare: coordinate, newSquare: coord
 
     newBoard[newSquare[0]][newSquare[1]] = getPieceAt(oldSquare, boardState)
     newBoard[oldSquare[0]][oldSquare[1]] = buildPiece(0)
+  }
+
+  console.log(extraInfo)
+  if (extraInfo.hasOwnProperty("crush")) {
+    newBoard[extraInfo["crush"][0]][extraInfo["crush"][1]] = buildPiece(0)
   }
 
   postMovePieces.forEach((elem) => {

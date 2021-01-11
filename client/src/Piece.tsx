@@ -147,6 +147,7 @@ export function isSquareUnderAttack(targetSquare: coordinate, currPlayer: number
     // Use WHITE pieces since we're absolute valuing
     PieceType.WHITE_ROOK,
     PieceType.WHITE_QUEEN,
+    PieceType.WHITE_ELEPHANT,
   ]
   const isAttackedCardinally = cardinalIncs.some((increments) => {
     // Increments is an [xInc, yInc]
@@ -158,7 +159,30 @@ export function isSquareUnderAttack(targetSquare: coordinate, currPlayer: number
       xInc += increments[0]
       yInc += increments[1]
     }
-    return (cardinalAttackers.includes(Math.abs(pieceAtType)) && oppositeSign(pieceAtType, currPlayer))
+    if (cardinalAttackers.includes(Math.abs(pieceAtType)) && oppositeSign(pieceAtType, currPlayer)) {
+      return true
+    }
+
+    // Handle the elephant
+    if (pieceAtType !== PieceType.INVALID && oppositeSign(pieceAtType, currPlayer)) {
+      // Elephant cannot crush its own piece
+      return false
+    } else if (pieceAtType !== PieceType.INVALID) {
+      pieceAtType = getPieceAt([targetSquare[0] + xInc, targetSquare[1] + yInc], boardState).type
+      while (pieceAtType === PieceType.NONE) {
+        xInc += increments[0]
+        yInc += increments[1]
+        pieceAtType = getPieceAt([targetSquare[0] + xInc, targetSquare[1] + yInc], boardState).type
+      }
+
+      if ([PieceType.BLACK_ELEPHANT, PieceType.WHITE_ELEPHANT].includes(pieceAtType) && oppositeSign(pieceAtType, currPlayer)) {
+        // Is an opposing elephant
+        return true
+      }
+    }
+    // Check if the elephant can deliver a mate through crush
+
+    return false
   })
 
   const diagonalIncs = [
@@ -449,6 +473,62 @@ export class Queen extends Piece {
   turnTick() {}
 }
 
+export class Elephant extends Piece {
+  constructor(type: number) {
+    super(type)
+  }
+
+  validateMove(currPos: coordinate, newPos: coordinate, boardState: Piece[][]) {
+    // The elephant is a rook with the "crush" ability
+    if (!coordinateWithinBoard(newPos)) {
+      return [false, {}]
+    }
+
+    let xDiff = newPos[0] - currPos[0]
+    let yDiff = newPos[1] - currPos[1]
+  
+    let onCardinal = (xDiff === 0 && yDiff !== 0) || (xDiff !== 0 && yDiff === 0)
+    if (!onCardinal) {
+      return [false, {}]
+    }
+  
+    let xInc = 0
+    let yInc = 0
+  
+    if (xDiff === 0) {
+      yInc = yDiff > 0 ? 1 : -1
+    } else {
+      xInc = xDiff > 0 ? 1 : -1
+    }
+  
+    let extraInfo: any = {}
+    for (let i = 1; i < Math.abs(xDiff); i++) {
+      let candidate = getPieceAt([currPos[0]+(i*xInc), currPos[1]+(i*yInc)], boardState)
+      if (candidate.type !== PieceType.NONE && oppositeSign(candidate.type, this.type)) {
+        if (Object.keys(extraInfo).length !== 0) {
+          // If we've already crushed something, we can't crush again
+          return [false, {}]
+        }
+        extraInfo = {"crushed": [currPos[0]+(i*xInc), currPos[1]+(i*yInc)]}
+      } else if (candidate.type !== PieceType.NONE && !oppositeSign(candidate.type, this.type)) {
+        return [false, {}]
+      }
+    }
+  
+    let currPiece = getPieceAt(currPos, boardState)
+    let targetPiece = getPieceAt(newPos, boardState)
+    return [(targetPiece.type === PieceType.NONE || oppositeSign(targetPiece.type, currPiece.type)), extraInfo]
+  }
+
+  postMove() {
+    if (!this.hasMoved) {
+      this.hasMoved = true
+    }
+  }
+
+  turnTick() {}
+}
+
 export function buildPiece(type: number) {
   if (type === PieceType.INVALID) {
     return new Invalid()
@@ -464,6 +544,8 @@ export function buildPiece(type: number) {
     return new King(type)
   } else if (type === PieceType.WHITE_QUEEN || type === PieceType.BLACK_QUEEN) {
     return new Queen(type)
+  } else if (type === PieceType.WHITE_ELEPHANT || type === PieceType.BLACK_ELEPHANT) {
+    return new Elephant(type)
   }
   return new None()
 }
@@ -487,6 +569,8 @@ export function copyPiece(piece: Piece) {
     res = new King(piece.type)
   } else if (piece.type === PieceType.WHITE_QUEEN || piece.type === PieceType.BLACK_QUEEN) {
     res = new Queen(piece.type)
+  } else if (piece.type === PieceType.WHITE_ELEPHANT || piece.type === PieceType.BLACK_ELEPHANT) {
+    res = new Elephant(piece.type)
   } else {
     res = new None()
   }
