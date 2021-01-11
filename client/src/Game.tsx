@@ -155,7 +155,6 @@ function Game() {
       {"currPlayer": gameInfo.currPlayer, "draft": stringified.substring(1, stringified.length-1)},
     )
   }
-  
 
   function updateBoardState(newBoard: Piece[][]) {
     setGameInfo({

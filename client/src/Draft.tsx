@@ -35,7 +35,6 @@ const allPieces: number[] = [
   PieceType.WHITE_KNIGHT,
   PieceType.WHITE_QUEEN,
   PieceType.WHITE_PAWN,
-  PieceType.WHITE_ELEPHANT,
 ]
 
 function pieceToPoints(piece: number) {
@@ -100,6 +99,7 @@ function Draft(props: any) {
     let res = allPieces
 
     /*
+    TODO: Square-constrained drafts
     let res: number[] = []
 
     if (selectedSquare[0] === 0) {
@@ -172,7 +172,7 @@ function Draft(props: any) {
 
       <div className="points-and-submit">
         <div className="points"><strong>{currPoints}</strong></div>
-        <Button variant="contained" size="large" onClick={() => submitDraft(currDraft, currPoints)}>
+        <Button variant="contained" size="large" disabled={currPlayer === PlayerType.SPECTATOR} onClick={() => submitDraft(currDraft, currPoints)}>
           <span className="button-text">Submit draft</span>
         </Button>
       </div>

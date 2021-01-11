@@ -159,8 +159,8 @@ function makeMove(boardState: Piece[][], oldSquare: coordinate, newSquare: coord
     const newRookPos = [kingPos[0], kingPos[1]+(2*yInc)-(yInc)]
     const newKingPos = [kingPos[0], kingPos[1]+(2*yInc)]
 
-    newBoard[newKingPos[0]][newKingPos[1]] = getPieceAt(kingPos, boardState)
-    newBoard[newRookPos[0]][newRookPos[1]] = getPieceAt(rookPos, boardState)
+    newBoard[newKingPos[0]][newKingPos[1]] = getPieceAt(kingPos, newBoard)
+    newBoard[newRookPos[0]][newRookPos[1]] = getPieceAt(rookPos, newBoard)
 
     postMovePieces.push([kingPos, newKingPos])
     postMovePieces.push([rookPos, newRookPos])
@@ -170,23 +170,25 @@ function makeMove(boardState: Piece[][], oldSquare: coordinate, newSquare: coord
   } else if (extraInfo.hasOwnProperty("enpassant") && extraInfo["enpassant"]) {
     postMovePieces.push([oldSquare, newSquare])
 
-    newBoard[newSquare[0]][newSquare[1]] = getPieceAt(oldSquare, boardState)
+    newBoard[newSquare[0]][newSquare[1]] = getPieceAt(oldSquare, newBoard)
     newBoard[oldSquare[0]][oldSquare[1]] = buildPiece(PieceType.NONE)
   
-    const movedPiece = getPieceAt(newSquare, boardState)
+    const movedPiece = getPieceAt(newSquare, newBoard)
     const diff = movedPiece.type === PieceType.WHITE_PAWN ? 1 : -1
     newBoard[newSquare[0]-diff][newSquare[1]] = buildPiece(0)
   } else {
     postMovePieces.push([oldSquare, newSquare])
 
-    newBoard[newSquare[0]][newSquare[1]] = getPieceAt(oldSquare, boardState)
+    newBoard[newSquare[0]][newSquare[1]] = getPieceAt(oldSquare, newBoard)
     newBoard[oldSquare[0]][oldSquare[1]] = buildPiece(0)
   }
 
-  console.log(extraInfo)
+  /*
+  TODO: Elephant
   if (extraInfo.hasOwnProperty("crush")) {
     newBoard[extraInfo["crush"][0]][extraInfo["crush"][1]] = buildPiece(0)
   }
+  */
 
   postMovePieces.forEach((elem) => {
     newBoard[elem[1][0]][elem[1][1]].postMove(elem[0], elem[1], boardState)

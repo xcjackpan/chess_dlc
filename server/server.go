@@ -71,7 +71,7 @@ func createBoardFromDrafts(whiteDraft string, blackDraft string) string {
 
 func cleanUpHub(gameId string) {
   // Delete the entry in the hubMap. Since this is the only place the hub is kept, the GC should take care of the hub
-  // delete(hubMap, gameId)
+  delete(hubMap, gameId)
 }
 
 // SANDBOX

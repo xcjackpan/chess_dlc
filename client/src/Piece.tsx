@@ -62,7 +62,6 @@ function validateCastle(kingPos: coordinate, rookPos: coordinate, boardState: Pi
   const rook = getPieceAt(rookPos, boardState)
   const currPlayer = king.type > 0 ? 1 : -1
 
-
   if (king.hasMoved || rook.hasMoved || kingPos[0] !== rookPos[0]) {
     return false
   }
@@ -163,7 +162,8 @@ export function isSquareUnderAttack(targetSquare: coordinate, currPlayer: number
       return true
     }
 
-    // Handle the elephant
+    /*
+    TODO: Elephant
     if (pieceAtType !== PieceType.INVALID && oppositeSign(pieceAtType, currPlayer)) {
       // Elephant cannot crush its own piece
       return false
@@ -181,6 +181,7 @@ export function isSquareUnderAttack(targetSquare: coordinate, currPlayer: number
       }
     }
     // Check if the elephant can deliver a mate through crush
+    */
 
     return false
   })
