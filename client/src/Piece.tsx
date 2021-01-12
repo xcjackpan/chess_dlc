@@ -38,14 +38,17 @@ function validateCardinalMove(currPos: coordinate, newPos: coordinate, boardStat
 
   let xInc = 0
   let yInc = 0
+  let diff = 0
 
   if (xDiff === 0) {
+    diff = yDiff
     yInc = yDiff > 0 ? 1 : -1
   } else {
+    diff = xDiff
     xInc = xDiff > 0 ? 1 : -1
   }
 
-  for (let i = 1; i < Math.abs(xDiff); i++) {
+  for (let i = 1; i < Math.abs(diff); i++) {
     let candidate = getPieceAt([currPos[0]+(i*xInc), currPos[1]+(i*yInc)], boardState)
     if (candidate.type !== PieceType.NONE) {
       return false

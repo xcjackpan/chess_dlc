@@ -36,7 +36,7 @@ type SubmitDraftBody struct {
 }
 
 // CONSTANTS
-const port = "8080"
+const port = "5000"
 const databaseUrl = "https://chess-dlc-default-rtdb.firebaseio.com/"
 const gameIdLength = 8
 const clientIdLength = 4
@@ -303,7 +303,7 @@ func handleRequests() {
   router.HandleFunc("/draft/{gameId}", handleSubmitDraft).Methods(http.MethodPost,  http.MethodOptions)
   router.HandleFunc("/websocket/{gameId}", handleWebsocket)
 
-  router.PathPrefix("/").Handler(http.FileServer(http.Dir("../client/build")))
+  router.PathPrefix("/").Handler(http.FileServer(http.Dir("client/build")))
 
   log.Fatal(http.ListenAndServe(":"+port, router))
 }

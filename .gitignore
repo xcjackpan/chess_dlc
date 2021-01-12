@@ -24,3 +24,5 @@ yarn-debug.log*
 yarn-error.log*
 
 firebase_auth.json
+build/
+chess_dlc_eb/

@@ -109,7 +109,6 @@ function Game() {
         // TODO: Enter draft stage
         setGameInfo((gameInfo) => {
           const receivedBoardState = deserializeBoardState(event.data, gameInfo.currPlayer)
-          console.log(receivedBoardState)
           const updatedGameInfo = {
             ...gameInfo,
             gameState: GameState.BOARD, // By the time we receive stuff from the websocket, should be in game
@@ -117,7 +116,6 @@ function Game() {
             currTurn: receivedBoardState.currTurn,
             currWinner: receivedBoardState.hasOwnProperty("winner") ? receivedBoardState.winner : PlayerType.UNKNOWN,
           }
-          console.log(updatedGameInfo)
           return updatedGameInfo
         })
       }

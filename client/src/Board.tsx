@@ -438,6 +438,9 @@ function Board(props: gameprops) {
           )
         )}
       </div>
+      {
+        currPlayer === PlayerType.SPECTATOR && <strong>SPECTATING</strong>
+      }
     </div>
   );
 }
