@@ -1,20 +1,23 @@
 import "./Draft.css";
 import React, { useState } from "react";
-import { coordinate, PieceType, PlayerType, squaresEqual } from "./Utils";
+import { coordinate, PieceType, PlayerType, squaresContainedBy, squaresEqual } from "./Utils";
 import { renderSquare } from "./Board";
 import Button from '@material-ui/core/Button';
 
 const emptyWhiteDraft = [
-  [0,0,0,0,0,0,0,0],
+  [0,0,0,1,1,1,0,0],
   [0,0,0,0,6,0,0,0],
 ]
 
 const emptyBlackDraft = [
-  [0,0,0,0,0,0,0,0],
+  [0,0,-1,-1,-1,0,0,0],
   [0,0,0,-6,0,0,0,0],
 ]
 
-const pointTotal = 39
+const pointTotal = 36
+
+const whiteIllegalSquares: coordinate[] = [[0,3], [0,4], [0,5], [1,4]]
+const blackIllegalSquares: coordinate[] = [[0,2], [0,3], [0,4], [1,3]]
 
 const bishopSquares: coordinate[] = [[1,2], [1,5]]
 const knightSquares: coordinate[] = [[1,1], [1,6]]
@@ -93,7 +96,11 @@ function Draft(props: any) {
   function availablePieces() {
     // Balance-wise, I'm not sure how broken it is to restrict draft pieces to a square...
     // If I need to rebalance the game, here is where we can configure the possible drafts
-    if (squaresEqual(selectedSquare, [-1, -1])) {
+    if (
+      squaresEqual(selectedSquare, [-1, -1])
+      || (currPlayer === PlayerType.WHITE && squaresContainedBy(whiteIllegalSquares, selectedSquare))
+      || (currPlayer === PlayerType.BLACK && squaresContainedBy(blackIllegalSquares, selectedSquare))
+    ) {
       return []
     }
     let res = allPieces
@@ -193,7 +200,7 @@ function Draft(props: any) {
         <p>
           A few ground rules here:
           <ul>
-            <li><strong>The king cannot be moved</strong></li>
+            <li><strong>The king and the three pawns ahead of it cannot be moved.</strong> This rule was added to prevent instant checkmate cheeses.</li>
             <li><strong>A draft is valid if and only if it has a point total greater than or equal to 0</strong></li>
           </ul>
         </p>

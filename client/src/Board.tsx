@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./Board.css";
 import { PieceType, getPieceAt, oppositeSign, squaresEqual, coordinate, move, gameprops, PlayerType } from "./Utils";
 import { buildPiece, copyPiece, getValidKnightMoves, getValidKingMoves, isSquareUnderAttack, Piece, deserializePiece, serializePiece } from "./Piece";
@@ -67,7 +67,7 @@ export function serializeBoardState(boardState: Piece[][], currTurn: number, cur
   if (checkmate) {
     data["winner"] = currPlayer
   } else if (stalemate) {
-    data["winner"] = PlayerType.SPECTATOR
+    data["winner"] = PlayerType.STALEMATE
   }
 
   return JSON.stringify(data)
@@ -207,10 +207,20 @@ function Board(props: gameprops) {
   let { currPlayer, currTurn, currWinner } = props
 
   const [selectedSquare, setSelectedSquare]: [coordinate, any] = useState([-1,-1])
-  const [displayGameEnd, setDisplayGameEnd] = useState(currWinner)
+  const [displayGameEnd, setDisplayGameEnd] = useState(PlayerType.SPECTATOR)
+
+  useEffect(() => {
+    setDisplayGameEnd(currWinner);
+  }, [currWinner])
 
   async function updateBoardState(newBoard: Piece[][], checkmate: boolean, stalemate: boolean) {
     const serialized = serializeBoardState(newBoard, currTurn*-1, currPlayer, checkmate, stalemate)
+
+    if (checkmate) {
+      setDisplayGameEnd(currPlayer)
+    } else if (stalemate) {
+      setDisplayGameEnd(PlayerType.STALEMATE)
+    }
 
     while (true) {
       if (props.sendToSocket(serialized)) {
@@ -405,7 +415,7 @@ function Board(props: gameprops) {
       >
         <DialogTitle>
           <span className="game-over-text">
-            {currWinner === PlayerType.SPECTATOR ? stalemateText : (currWinner === PlayerType.WHITE ? "White" : "Black") + checkmateText}
+            {displayGameEnd === PlayerType.STALEMATE ? stalemateText : (displayGameEnd === PlayerType.WHITE ? "White" : "Black") + checkmateText}
           </span>
         </DialogTitle>
         <DialogActions>

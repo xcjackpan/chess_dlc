@@ -28,6 +28,11 @@ function Lobby(props: any) {
           and the first visitor will play with you.
         </p>
 
+        <p>
+          <strong>Disclaimer:</strong> This variant is a work in progress! The primary purpose of this app is for me to have a "playtesting" area to figure out what's
+          fun and what's not - as such, the rules are subject to change at my whim.
+        </p>
+
         <p><a href="https://github.com/xcjackpan/chess_dlc">Here's the source code if you're a nerd</a></p>
       </div>
       <div className="buttons">

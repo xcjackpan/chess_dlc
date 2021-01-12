@@ -22,6 +22,7 @@ export const GameState = {
 
 export const PlayerType = {
   UNKNOWN: -100,
+  STALEMATE: -99,
   SPECTATOR: 0,
   WHITE: 1,
   BLACK: -1,

@@ -55,7 +55,7 @@ function Game() {
     // b) Client has no cookie, game needs a player
     // c) Joining as a spectator
     const cookiePresent = cookies.hasOwnProperty("chess-dlc") && cookies["chess-dlc"].hasOwnProperty("player")
-    axios.get(`http://localhost:8080/join/${gameInfo.gameId}`, {params: {cookiePresent: cookiePresent}}).then(res => {
+    axios.get(`/join/${gameInfo.gameId}`, {params: {cookiePresent: cookiePresent}}).then(res => {
       let currPlayer = PlayerType.SPECTATOR
       if (cookiePresent) {
         // Client has already joined before
@@ -94,7 +94,10 @@ function Game() {
       }
 
       // 2. Load up the websocket
-      let ws = new WebSocket(`ws://localhost:8080/websocket/${gameInfo.gameId}`)
+      const l = window.location;
+      let websocketUrl = ((l.protocol === "https:") ? "wss://" : "ws://") + l.host + `/websocket/${gameInfo.gameId}`;
+
+      let ws = new WebSocket(websocketUrl)
       ws.onopen = () => {
         setWebSocket(ws)
       };
@@ -106,6 +109,7 @@ function Game() {
         // TODO: Enter draft stage
         setGameInfo((gameInfo) => {
           const receivedBoardState = deserializeBoardState(event.data, gameInfo.currPlayer)
+          console.log(receivedBoardState)
           const updatedGameInfo = {
             ...gameInfo,
             gameState: GameState.BOARD, // By the time we receive stuff from the websocket, should be in game
@@ -113,6 +117,7 @@ function Game() {
             currTurn: receivedBoardState.currTurn,
             currWinner: receivedBoardState.hasOwnProperty("winner") ? receivedBoardState.winner : PlayerType.UNKNOWN,
           }
+          console.log(updatedGameInfo)
           return updatedGameInfo
         })
       }
@@ -151,7 +156,7 @@ function Game() {
 
     const stringified = JSON.stringify(serialized)
     axios.post(
-      `http://localhost:8080/draft/${gameInfo.gameId}`,
+      `/draft/${gameInfo.gameId}`,
       {"currPlayer": gameInfo.currPlayer, "draft": stringified.substring(1, stringified.length-1)},
     )
   }

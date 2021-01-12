@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useState } from "react";
 import { CookiesProvider } from "react-cookie";
-import { BrowserRouter, Route, Switch } from "react-router-dom";
+import { HashRouter, Route, Switch } from "react-router-dom";
 import Game from "./Game";
 import Lobby from "./Lobby";
 
@@ -10,7 +10,7 @@ function App() {
 
   function createGame(history: any, createdBy: number) {
     // 1. Create the record of the game in the backend
-    axios.post("http://localhost:8080/create", {"createdBy": createdBy}).then(res => {
+    axios.post("/create", {"createdBy": createdBy}).then(res => {
       const gameInfo = res.data
 
       // 2. Redirect you to the game
@@ -27,7 +27,7 @@ function App() {
   } else {
     return (
       <CookiesProvider>
-        <BrowserRouter>
+        <HashRouter>
           <Switch>
             <Route
               path="/game/:gameId"
@@ -47,7 +47,7 @@ function App() {
               )}
             />
           </Switch>
-        </BrowserRouter>
+        </HashRouter>
       </CookiesProvider>
     )
   }

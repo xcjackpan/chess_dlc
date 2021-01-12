@@ -74,12 +74,6 @@ func cleanUpHub(gameId string) {
   delete(hubMap, gameId)
 }
 
-// SANDBOX
-func handleRoot(w http.ResponseWriter, r *http.Request) {
-  enableCors(&w)
-  fmt.Fprintf(w, "root")
-}
-
 func handleCreateGame(w http.ResponseWriter, r *http.Request) {
   // Initially called to create the game in the backend
   enableCors(&w)
@@ -304,12 +298,12 @@ func handleRequests() {
   // creates a new instance of a mux router
   router := mux.NewRouter().StrictSlash(true)
 
-  router.HandleFunc("/", handleRoot).Methods(http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodOptions)
   router.HandleFunc("/create", handleCreateGame).Methods(http.MethodPost, http.MethodOptions)
   router.HandleFunc("/join/{gameId}", handleJoinGame).Methods(http.MethodGet)
   router.HandleFunc("/draft/{gameId}", handleSubmitDraft).Methods(http.MethodPost,  http.MethodOptions)
-
   router.HandleFunc("/websocket/{gameId}", handleWebsocket)
+
+  router.PathPrefix("/").Handler(http.FileServer(http.Dir("../client/build")))
 
   log.Fatal(http.ListenAndServe(":"+port, router))
 }

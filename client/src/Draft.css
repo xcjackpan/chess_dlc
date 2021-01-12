@@ -46,3 +46,23 @@
 .draft .info p {
   font-size: 25px;
 }
+
+@media only screen and (max-width : 1500px) {
+  .draft .points-and-submit {
+    width: 50%;
+  }
+
+  .draft .info {
+    width: 70%;
+  }
+}
+
+@media only screen and (max-width : 900px) {
+  .draft .points-and-submit {
+    width: 80%;
+  }
+
+  .draft .info {
+    width: 90%;
+  }
+}
