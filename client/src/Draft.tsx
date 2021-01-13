@@ -180,7 +180,7 @@ function Draft(props: any) {
       <div className="points-and-submit">
         <div className="points"><strong>{currPoints}</strong></div>
         <Button variant="contained" size="large" disabled={currPlayer === PlayerType.SPECTATOR} onClick={() => submitDraft(currDraft, currPoints)}>
-          <span className="button-text">Submit draft</span>
+          <span className="button-text">{currPlayer === PlayerType.SPECTATOR ? `Players are drafting...` : `Submit draft`}</span>
         </Button>
       </div>
 

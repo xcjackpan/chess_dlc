@@ -1,17 +1,18 @@
 .lobby {
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: row;
   justify-content: space-around;
   align-items: center;
+  overflow-y: auto;
 }
 
 .lobby .info {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: left;
+  align-items: center;
   width: 30%;
 }
 
@@ -25,9 +26,19 @@
   align-items: center;
   justify-content: space-around;
   width: 20%;
-  height: 40%;
+  height: 50vh;
 }
 
 .lobby .buttons .button-text {
   font-size: 25px;
+}
+
+@media only screen and (max-width : 1500px) {
+  .lobby .info {
+    width: 50%;
+  }
+
+  .lobby .buttons {
+    width: 35%;
+  }
 }

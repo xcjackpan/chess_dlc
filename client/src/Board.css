@@ -23,7 +23,16 @@
   justify-content: center;
 }
 
-.board {
+.board-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.board-container .board {
   margin: 5vh 5vw;
   padding: 0;
   display: flex;
@@ -32,11 +41,18 @@
   align-items: center;
 }
 
-.board .piece {
+.board-container .board .piece {
   padding: 0;
   max-width: 100%;
 }
 
 .game-over-text {
   font-size: 25px;
+}
+
+.board-info {
+  padding-top: 15px;
+  display: flex;
+  justify-content: left;
+  flex-direction: column;
 }

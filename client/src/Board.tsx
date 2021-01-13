@@ -405,7 +405,7 @@ function Board(props: gameprops) {
   const checkmateText = " has won by checkmate."
 
   return (
-    <div>
+    <div className="board-container">
       <Dialog
         fullWidth={true}
         open={displayGameEnd !== PlayerType.UNKNOWN}
@@ -438,9 +438,11 @@ function Board(props: gameprops) {
           )
         )}
       </div>
-      {
-        currPlayer === PlayerType.SPECTATOR && <strong>SPECTATING</strong>
-      }
+      <div className="board-info">
+        <strong>{currTurn === PlayerType.WHITE ? `White's Turn` : `Black's Turn`}</strong>
+        <br />
+        {currPlayer === PlayerType.SPECTATOR ? 'SPECTATING' : ``}
+      </div>
     </div>
   );
 }
