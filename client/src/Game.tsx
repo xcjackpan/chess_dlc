@@ -67,7 +67,7 @@ function Game() {
         setCookie(
           "chess-dlc",
           {"player": res.data.waitingFor, "gameId": gameInfo.gameId},
-          {path: `/game/${gameInfo.gameId}`, maxAge: 3600*24*3},
+          {path: `#/game/${gameInfo.gameId}`, maxAge: 3600*24*3},
         );
       }
 
